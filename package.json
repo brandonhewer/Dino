@@ -1,0 +1,12 @@
+{
+  "name": "DinaturalTransformations",
+  "version": "0.0.1",
+  "description": "Dinatural Transformations",
+  "scripts": {
+    "install": "cmake-js compile"
+  },
+  "dependencies": {
+    "bindings": "^1.3.0",
+    "electron": "^3.0.5"
+  }
+}
