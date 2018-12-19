@@ -3,4 +3,4 @@ node_modules/
 /.vscode/
 build/
 lib/
-src/googletest-src/
+googletest-src/
