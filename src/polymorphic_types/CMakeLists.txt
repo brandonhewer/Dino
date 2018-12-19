@@ -10,6 +10,7 @@ target_include_directories(PolymorphicTypes
     inc
   PRIVATE
     ${CMAKE_JS_INC}
+    ${CMAKE_SOURCE_DIR}/node_modules/node-addon-api
 )
 
 target_link_libraries(PolymorphicTypes

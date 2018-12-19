@@ -3,7 +3,9 @@
 namespace Project {
 namespace Types {
 
-napi_value init_all (napi_env env, napi_value exports) {
+
+
+napi_value init_all(napi_env env, napi_value exports) {
   napi_value print_fn;
   return exports;
 }
