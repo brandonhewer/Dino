@@ -18,6 +18,7 @@ public:
   static Napi::Object contravariant_type(Napi::Env);
   static Napi::Object product_type(Napi::Env, std::size_t);
 
+  TypeConstructor const &type_constructor() const;
   void set_type_constructor(TypeConstructor &&type_constructor);
 
 private:

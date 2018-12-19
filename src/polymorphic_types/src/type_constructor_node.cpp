@@ -5,7 +5,7 @@ namespace {
 
 using namespace Project::Types;
 
-NodeTypeConstructor &to_type_constructor(Napi::Object &object) {
+NodeTypeConstructor &to_type_constructor(Napi::Object object) {
   return *Napi::ObjectWrap<NodeTypeConstructor>::Unwrap(object);
 }
 
@@ -13,8 +13,8 @@ NodeTypeConstructor &to_type_constructor(Napi::Value &value) {
   return to_type_constructor(value.As<Napi::Object>());
 }
 
-Napi::Object &escape_object(Napi::EscapableHandleScope &scope,
-                            Napi::Object &object) {
+Napi::Object escape_object(Napi::EscapableHandleScope &scope,
+                           Napi::Object object) {
   return scope.Escape(napi_value(object)).ToObject();
 }
 
@@ -23,13 +23,13 @@ Napi::Object compose_constructors(NodeTypeConstructor const &lhs,
                                   Napi::FunctionReference &constructor) {
   Napi::Object composed_object = constructor.New({});
   auto &composed = to_type_constructor(composed_object);
-  composed->set_type_constructor(
-      compose_type_constructors(m_type_constructor, rhs->m_type_constructor));
+  composed.set_type_constructor(compose_type_constructors(
+      lhs.type_constructor(), rhs.type_constructor()));
   return composed_object;
 }
 
 Napi::Value compose_constructors(NodeTypeConstructor const &lhs,
-                                 Napi::Value &rhs_value, Napi::Env &env,
+                                 Napi::Value rhs_value, Napi::Env &env,
                                  Napi::FunctionReference &constructor) {
   Napi::EscapableHandleScope scope(env);
   auto const &rhs = to_type_constructor(rhs_value);
@@ -41,8 +41,8 @@ Napi::Object create_type_constructor(TypeConstructor &&type_constructor,
                                      Napi::FunctionReference &constructor) {
   Napi::EscapableHandleScope scope(env);
   Napi::Object func = constructor.New({});
-  auto &constructor = to_type_constructor(func);
-  constructor->set_type_constructor(std::move(type_constructor));
+  auto &type = to_type_constructor(func);
+  type.set_type_constructor(std::move(type_constructor));
   return escape_object(scope, func);
 }
 
@@ -85,12 +85,12 @@ Napi::Object NodeTypeConstructor::function_type(Napi::Env env) {
 }
 
 Napi::Object NodeTypeConstructor::covariant_type(Napi::Env env) {
-  return create_type_constructor({create_covariant_type_parameter()}, env,
+  return create_type_constructor(create_covariant_type_constructor(), env,
                                  g_constructor);
 }
 
 Napi::Object NodeTypeConstructor::contravariant_type(Napi::Env env) {
-  return create_type_constructor({create_contravariant_type_parameter()}, env,
+  return create_type_constructor(create_contravariant_type_constructor(), env,
                                  g_constructor);
 }
 
@@ -102,6 +102,10 @@ Napi::Object NodeTypeConstructor::product_type(Napi::Env env,
 
 NodeTypeConstructor::NodeTypeConstructor(Napi::CallbackInfo const &info)
     : Napi::ObjectWrap<NodeTypeConstructor>(info), m_type_constructor() {}
+
+TypeConstructor const &NodeTypeConstructor::type_constructor() const {
+  return m_type_constructor;
+}
 
 void NodeTypeConstructor::set_type_constructor(
     TypeConstructor &&type_constructor) {

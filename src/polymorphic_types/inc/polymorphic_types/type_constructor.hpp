@@ -19,6 +19,8 @@ struct TypeConstructor {
 
 TypeConstructor::AtomicType create_covariant_type_parameter() noexcept;
 TypeConstructor::AtomicType create_contravariant_type_parameter() noexcept;
+TypeConstructor create_covariant_type_constructor() noexcept;
+TypeConstructor create_contravariant_type_constructor() noexcept;
 TypeConstructor create_function_type_constructor() noexcept;
 TypeConstructor create_product_type_constructor(std::size_t) noexcept;
 

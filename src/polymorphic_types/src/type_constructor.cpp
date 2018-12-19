@@ -37,6 +37,14 @@ TypeConstructor::AtomicType create_contravariant_type_parameter() noexcept {
   return TypeConstructor::AtomicType{FreeType{}, Variance::CONTRAVARIANCE};
 }
 
+TypeConstructor create_covariant_type_constructor() noexcept {
+  return {TypeConstructor::ConstructorType{create_covariant_type_parameter()}};
+}
+
+TypeConstructor create_contravariant_type_constructor() noexcept {
+  return {TypeConstructor::ConstructorType{create_contravariant_type_parameter()}};
+}
+
 TypeConstructor create_function_type_constructor() noexcept {
   return create_type(create_contravariant_type_parameter(),
                      create_covariant_type_parameter());
