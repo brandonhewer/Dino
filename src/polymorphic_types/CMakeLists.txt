@@ -1,5 +1,6 @@
 
 add_library(PolymorphicTypes SHARED
+  src/addon.cpp
   src/type_constructors.cpp
   src/type_transformers.cpp
 )
