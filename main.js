@@ -1,4 +1,5 @@
 const { app, BrowserWindow } = require('electron');
+const Types = require("bindings")("PolymorphicTypes");
 
 let win;
 
@@ -8,6 +9,12 @@ function createWindow() {
   win.loadFile('app/index.html');
 
   win.webContents.openDevTools();
+
+  const function_type = Types.create_function_type();
+  const function_type2 = Types.create_function_type();
+  const function_type3 = function_type.compose(function_type2);
+  const covariant = Types.create_covariant_type();
+  function_type3.compose(covariant);
 
   win.on('closed', () => {
     win = null;

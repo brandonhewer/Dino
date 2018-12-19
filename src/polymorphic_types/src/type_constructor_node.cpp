@@ -1,4 +1,5 @@
 #include "polymorphic_types/type_constructor_node.hpp"
+#include "polymorphic_types/type_errors.hpp"
 #include "polymorphic_types/type_transformers.hpp"
 
 namespace {
@@ -56,6 +57,14 @@ Napi::Value throw_wrong_number_of_compose_arguments(Napi::Env &env,
 
 Napi::Value throw_invalid_compose_argument(Napi::Env &env) {
   Napi::TypeError::New(env, "Expected a NodeTypeConstructor object.")
+      .ThrowAsJavaScriptException();
+  return env.Null();
+}
+
+Napi::Value throw_composition_error(Napi::Env &env,
+                                    CompositionError const &composition) {
+  Napi::TypeError::New(env,
+                       std::string("Composition failed: ") + composition.what())
       .ThrowAsJavaScriptException();
   return env.Null();
 }
@@ -122,7 +131,11 @@ Napi::Value NodeTypeConstructor::compose(Napi::CallbackInfo const &info) {
   if (!info[0].IsObject())
     return throw_invalid_compose_argument(env);
 
-  return compose_constructors(*this, info[0], env, g_constructor);
+  try {
+    return compose_constructors(*this, info[0], env, g_constructor);
+  } catch (CompositionError const &err) {
+    return throw_composition_error(env, err);
+  }
 }
 
 } // namespace Types
