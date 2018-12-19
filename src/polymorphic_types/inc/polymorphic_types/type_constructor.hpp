@@ -1,5 +1,5 @@
-#ifndef __TYPE_CONSTRUCTORS_HPP_
-#define __TYPE_CONSTRUCTORS_HPP_
+#ifndef __TYPE_CONSTRUCTOR_HPP_
+#define __TYPE_CONSTRUCTOR_HPP_
 
 #include <cstddef>
 #include <variant>
