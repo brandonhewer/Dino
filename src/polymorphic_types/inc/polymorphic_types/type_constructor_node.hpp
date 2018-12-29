@@ -23,8 +23,11 @@ public:
 
 private:
   Napi::Value compose(Napi::CallbackInfo const &);
+  Napi::Value functorise(Napi::CallbackInfo const &);
+  Napi::Value type_at(Napi::CallbackInfo const &);
 
   static Napi::FunctionReference g_constructor;
+  
   TypeConstructor m_type_constructor;
 };
 

@@ -1,6 +1,7 @@
 
 add_library(PolymorphicTypes SHARED
   src/addon.cpp
+  src/atomic_type_reference.cpp
   src/type_constructor.cpp
   src/type_constructor_node.cpp
   src/type_errors.cpp

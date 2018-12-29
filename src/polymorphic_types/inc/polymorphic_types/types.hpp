@@ -8,7 +8,7 @@ namespace Types {
 
 struct FreeType {};
 
-enum class Variance { COVARIANCE, CONTRAVARIANCE };
+enum class Variance { COVARIANCE, CONTRAVARIANCE, INVARIANCE, BIVARIANCE };
 
 enum class MonoType { INT, CHAR, FLOAT };
 

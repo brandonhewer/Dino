@@ -37,12 +37,27 @@ TypeConstructor::AtomicType create_contravariant_type_parameter() noexcept {
   return TypeConstructor::AtomicType{FreeType{}, Variance::CONTRAVARIANCE};
 }
 
+TypeConstructor::AtomicType create_covariant_functor_constructor(
+    std::size_t identifier, TypeConstructor::ConstructorType &&types) noexcept {
+  return TypeConstructor::AtomicType{
+      FunctorTypeConstructor{std::move(types), identifier},
+      Variance::COVARIANCE};
+}
+
+TypeConstructor::AtomicType create_contravariant_functor_constructor(
+    std::size_t identifier, TypeConstructor::ConstructorType &&types) noexcept {
+  return TypeConstructor::AtomicType{
+      FunctorTypeConstructor{std::move(types), identifier},
+      Variance::CONTRAVARIANCE};
+}
+
 TypeConstructor create_covariant_type_constructor() noexcept {
   return {TypeConstructor::ConstructorType{create_covariant_type_parameter()}};
 }
 
 TypeConstructor create_contravariant_type_constructor() noexcept {
-  return {TypeConstructor::ConstructorType{create_contravariant_type_parameter()}};
+  return {
+      TypeConstructor::ConstructorType{create_contravariant_type_parameter()}};
 }
 
 TypeConstructor create_function_type_constructor() noexcept {

@@ -1,3 +1,18 @@
 {
-    "extends": "airbnb-base"
+    "extends": [
+      "airbnb-base",
+      "plugin:react/recommended"
+    ],
+    "env": {
+      "browser": true,
+      "node": true
+    },
+    "settings": {
+      "react": {
+        "createClass": "createReactClass",
+        "pragma": "React",
+        "version": "15.0",
+        "flowVersion": "0.53"
+      }
+    }
 }
