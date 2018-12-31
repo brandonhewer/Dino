@@ -1,6 +1,6 @@
 import { app, BrowserWindow } from 'electron';
 
-let win;
+let win: BrowserWindow;
 
 function createWindow() {
   win = new BrowserWindow({ width: 800, height: 600 });
