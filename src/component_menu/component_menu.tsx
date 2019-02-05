@@ -1,7 +1,11 @@
-import { ComponentIcon } from './component_icon';
+import { DraggableIcon, StaticIcon } from './component_icon';
 
 interface IComponentRowProps {
   readonly icons: JSX.Element[];
+}
+
+export class ComponentRow {
+
 }
 
 function ComponentRow(props: IComponentRowProps): JSX.Element {
@@ -12,12 +16,15 @@ function ComponentRow(props: IComponentRowProps): JSX.Element {
   );
 }
 
-export interface IComponentMenuProps {
+export interface IComponentMenuSetup {
   readonly iconClasses: string[];
   readonly iconLabels: string[];
   readonly iconWidth: number;
   readonly iconHeight: number;
   readonly iconsInRow: number;
+}
+
+export interface IComponentMenuProps extends IComponentMenuSetup {
   readonly onReleaseComponent: (i: number) => any;
 }
 

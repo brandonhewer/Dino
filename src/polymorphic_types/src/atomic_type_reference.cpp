@@ -21,6 +21,19 @@ create_atomic_type_reference(Napi::Env &env,
   return escape_object(scope, func);
 }
 
+Napi::Value throw_wrong_number_of_set_arguments(Napi::Env &env,
+                                                std::size_t length) {
+  Napi::TypeError::New(env, "Wrong number of arguments. Expected 1, received " +
+                                std::to_string(length))
+      .ThrowAsJavaScriptException();
+  return env.Null();
+}
+
+TypeConstructor::Type get_type(Napi::Value const &value) {
+  if (value.IsNumber())
+    return value.ToNumber().Uint32Value();
+}
+
 } // namespace
 
 namespace Project {
@@ -50,6 +63,18 @@ Napi::Object NodeAtomicTypeReference::create(Napi::Env env,
   atomic_type.m_context_variance = context_variance;
   atomic_type.m_type = &type;
   return std::move(atomic_object);
+}
+
+Napi::Value NodeAtomicTypeReference::set(Napi::CallbackInfo const &info) {
+  Napi::Env env = info.Env();
+
+  std::size_t length = info.Length();
+  if (length != 1)
+    return throw_wrong_number_of_set_arguments(env, length);
+
+  *m_type = get_type(info[0]);
+
+  return info.This();
 }
 
 } // namespace Types

@@ -1,69 +1,71 @@
 import { Component, MouseEvent } from 'react';
-import { DraggableIcon, IPosition } from './draggable_icon';
+import Draggable, { DraggableData } from 'react-dnd';
+
+export type Position = [number, number];
 
 interface IStaticIconProps {
   readonly iconClass: string;
   readonly label: string;
   readonly height: number;
   readonly width: number;
+  readonly onMouseDown: (x: number, y: number) => any;
 }
 
 interface IActiveIconProps extends IStaticIconProps {
-  readonly position: IPosition;
+  readonly position: Position;
+  readonly onStartDrag: (x: number, y: number) => any;
+  readonly onStopDrag: (x: number, y: number) => any;
 }
 
 interface IComponentIconProps extends IStaticIconProps {
-  readonly onMouseUp?: (e: MouseEvent) => any;
+  readonly onMouseUp?: (x: number, y: number) => any;
 }
 
 interface IComponentState {
   dragging: boolean;
-  position: IPosition;
+  position: Position;
 }
 
-function createPosition(e: MouseEvent): IPosition {
-  return { x : e.pageX, y : e.pageY };
-}
-
-function StaticIcon(props: IStaticIconProps) {
+export function StaticIcon(props: IStaticIconProps) {
   return (
     <span
       className={props.iconClass}
       role="img"
       aria-label={props.label}
       style={{ width : props.width, height : props.height }}
+      onMouseDown={(e: MouseEvent) => props.onMouseDown(e.pageX, e.pageY)}
     />
   );
 }
 
-function ActiveIcon(props: IActiveIconProps): JSX.Element {
+export function DraggableIcon(props: IActiveIconProps): JSX.Element {
   return (
-    <div>
+    <Draggable
+      axis='both'
+      defaultPosition={{x: props.position[0], y: props.position[1]}}
+      onStart={(_: Event, data: DraggableData) => props.onStartDrag(data.x, data.y)}
+      onStop={(_: Event, data: DraggableData) => props.onStopDrag(data.x, data.y)}
+    >
       <StaticIcon {...props}/>
-      <DraggableIcon {...props}/>
-    </div>
+    </Draggable>
   );
 }
 
 export class ComponentIcon extends Component<IComponentIconProps, IComponentState> {
   constructor(props: IComponentIconProps) {
     super(props);
-    this.setState({ dragging : false, position : { x : 0, y : 0 } });
+    this.setState({ dragging : false, position : [0, 0] });
   }
 
-  public onMouseDown(e: MouseEvent) {
-    this.setState({ dragging : true, position : createPosition(e) });
-    e.stopPropagation();
-    e.preventDefault();
+  private onMouseDown(x: number, y: number) {
+    this.setState({ dragging : true, position : [x, y] });
   }
 
-  public onMouseUp(e: MouseEvent) {
-    this.setState({ dragging : false, position : createPosition(e) });
-    e.stopPropagation();
-    e.preventDefault();
+  private onMouseUp(x: number, y: number) {
+    this.setState({ dragging : false, position : [x, y] });
 
     if (this.props.onMouseUp !== undefined) {
-      this.props.onMouseUp(e);
+      this.props.onMouseUp(x, y);
     }
   }
 
@@ -71,6 +73,6 @@ export class ComponentIcon extends Component<IComponentIconProps, IComponentStat
     if (this.state.dragging) {
       return <ActiveIcon position={this.state.position} {...this.props}/>;
     }
-    return <StaticIcon {...this.props}/>;
+    return <StaticIcon onMouseDown={this.onMouseDown} {...this.props}/>;
   }
 }

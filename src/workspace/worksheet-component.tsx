@@ -1,35 +1,31 @@
-import { Component } from 'react';
+import Draggable from 'react-draggable';
+
+interface IPosition {
+  readonly x: number;
+  readonly y: number;
+}
 
 interface IWorksheetComponentProps {
-  element: JSX.Element;
-  onClick: (e: MouseEvent) => any;
+  readonly element: JSX.Element;
+  readonly defaultPosition: IPosition;
+  readonly isSelected: boolean;
+  readonly onClick: (e: MouseEvent) => any;
 }
 
-interface IWorksheetComponentState {
-  isSelected: boolean;
+function getComponentSelector(selected: boolean): string {
+  return `worksheet-component${selected ? '-selected' : ''}`;
 }
 
-export class WorksheetComponent
-  extends Component<IWorksheetComponentProps, IWorksheetComponentState> {
-
-  constructor(props: IWorksheetComponentProps) {
-    super(props);
-  }
-
-  public onClick(e: MouseEvent) {
-    this.setState({ isSelected : true });
-    this.props.onClick(e);
-  }
-
-  public render(): JSX.Element {
-    return (
-      <div id={this.getSelector()} onClick={this.onClick}>
-        {this.props.element}
+export function WorksheetComponent(props: IWorksheetComponentProps) {
+  return (
+    <Draggable
+      axis='both'
+      defaultPosition={props.defaultPosition}
+      handle='.handle'
+    >
+      <div id={getComponentSelector(props.isSelected)} onClick={this.onClick}>
+        {props.element}
       </div>
-    );
-  }
-
-  private getSelector(): string {
-    return `worksheet-component${this.state.isSelected ? '-selected' : ''}`;
-  }
+    </Draggable>
+  );
 }

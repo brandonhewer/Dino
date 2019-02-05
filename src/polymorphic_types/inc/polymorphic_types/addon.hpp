@@ -6,8 +6,7 @@
 namespace Project {
 namespace Types {
 
-
-
+Napi::Object init_all(Napi::Env env, Napi::Object exports);
 }
 } // namespace Project
 

@@ -1,10 +1,13 @@
 import { MouseEvent } from 'react';
 
-interface IBrowserOptionProps {
+interface IBrowserOptionSetup {
   readonly iconClass: string;
   readonly label: string;
   readonly height: number;
   readonly width: number;
+}
+
+interface IBrowserOptionProps extends IBrowserOptionSetup {
   readonly onClick: (e: MouseEvent) => any;
 }
 

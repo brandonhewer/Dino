@@ -17,6 +17,8 @@ public:
   static Napi::Object create(Napi::Env, Variance, TypeConstructor::Type &);
 
 private:
+  Napi::Value set(Napi::CallbackInfo const &);
+
   static Napi::FunctionReference g_constructor;
 
   Variance m_context_variance;

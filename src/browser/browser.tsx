@@ -2,11 +2,14 @@
 import { Component, MouseEvent } from 'react';
 import { BrowserOptionMenu, IBrowserOptionMenuProps } from './browser_option_menu';
 
-interface IBrowserProps {
+export interface IBrowserSetup {
   readonly optionIconClasses: string[];
   readonly optionIconLabels: string[];
   readonly optionWidth: number;
   readonly optionHeight: number;
+}
+
+export interface IBrowserProps extends IBrowserSetup {
   readonly windows: JSX.Element[];
 }
 

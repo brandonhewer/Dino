@@ -4,25 +4,50 @@ namespace {
 
 using namespace Project::Types;
 
-struct ThrowIfInvalidComposition {
+bool is_valid_composition(TypeConstructor const &, TypeConstructor const &);
 
-  template <typename T> void operator()(T const &lhs, T const &rhs) const {
-    if (lhs != rhs)
-      throw TypeMismatchError(lhs, rhs);
+struct IsValidComposition {
+
+  bool operator()(FreeType const &, FreeType const &) const { return true; }
+
+  bool operator()(MonoType const &lhs, MonoType const &rhs) const {
+    return lhs == rhs;
   }
+
+  bool operator()(std::size_t, std::size_t) const { return true; }
+
+  bool operator()(TypeConstructor const &lhs,
+                  TypeConstructor const &rhs) const {
+    return is_valid_composition(lhs, rhs);
+  }
+
+  bool operator()(TypeConstructor const &, std::size_t) const { return true; }
 
   template <typename T, typename U>
-  void operator()(T const &lhs, U const &rhs) const {
-    throw TypeMismatchError(lhs, rhs);
+  bool operator()(T const &lhs, U const &rhs) const {
+    return false;
   }
 
-} _throw_if_invalid_composition;
+} _is_valid_composition;
+
+bool is_valid_composition(TypeConstructor const &lhs,
+                          TypeConstructor const &rhs) {
+  for (auto i = 0u; i < lhs.type.size(); ++i) {
+    auto const &lhs_type = lhs.type[i];
+    auto const &rhs_type = rhs.type[i];
+    if (lhs_type.variance != rhs_type.variance ||
+        !std::visit(_is_valid_composition, lhs_type.type, rhs_type.type))
+      return false;
+  }
+  return true;
+}
 
 void throw_if_invalid_composition(TypeConstructor::AtomicType const &lhs,
                                   TypeConstructor::AtomicType const &rhs) {
   if (lhs.variance == rhs.variance)
     throw CompositionError(lhs.variance, rhs.variance);
-  std::visit(_throw_if_invalid_composition, lhs.type, rhs.type);
+  if (!std::visit(_is_valid_composition, lhs.type, rhs.type))
+    throw TypeMismatchError(lhs.type, rhs.type);
 }
 
 TypeConstructor::ConstructorType

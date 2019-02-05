@@ -8,5 +8,6 @@ project(DinaturalProject)
 include (AddGTest)
 
 add_subdirectory(src/polymorphic_types)
+add_subdirectory(src/naturality)
 
 enable_testing()

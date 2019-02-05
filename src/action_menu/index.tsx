@@ -1,2 +1,7 @@
-import { ActionMenu, IActionMenuProps } from './action_menu';
-export { IActionMenuProps, ActionMenu };
+import { 
+  IActionMenuSetup, 
+  IActionMenuProps, 
+  ActionMenu 
+} from './action_menu';
+
+export { IActionMenuSetup, IActionMenuProps, ActionMenu };

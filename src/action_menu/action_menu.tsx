@@ -7,11 +7,14 @@ interface IActionIconProps {
   readonly onClick: (e: MouseEvent) => any;
 }
 
-export interface IActionMenuProps {
+export interface IActionMenuSetup {
   readonly iconClasses: string[];
   readonly iconLabels: string[];
   readonly iconWidth: number;
   readonly iconHeight: number;
+}
+
+export interface IActionMenuProps extends IActionMenuSetup {
   readonly onClick: (i: number) => (e: MouseEvent) => any;
 }
 

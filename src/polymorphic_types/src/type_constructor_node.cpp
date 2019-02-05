@@ -7,8 +7,13 @@ namespace {
 
 using namespace Project::Types;
 
-std::size_t to_unsigned_integer(Napi::Value &value) {
+std::size_t to_unsigned_integer(Napi::Value const &value) {
   return value.ToNumber().Uint32Value();
+}
+
+std::size_t get_unsigned_integer(Napi::Object const &object,
+                                 std::string const &key) {
+  return to_unsigned_integer(object.Get(key));
 }
 
 NodeTypeConstructor &to_type_constructor(Napi::Object object) {
@@ -139,6 +144,64 @@ get_constructor_type_and_variance_at(
   return {constructor_type, variance};
 }
 
+TypeConstructor::ConstructorType types_from(Napi::Array const &array);
+TypeConstructor constructor_from(Napi::Array const &array);
+
+TypeConstructor::Type type_from(Napi::Object const &object) {
+  auto const primitive = object.Get("primitive");
+  if (!primitive.IsNull())
+    return static_cast<MonoType>(primitive.ToNumber().Uint32Value());
+
+  auto const functor = object.Get("functor");
+  if (!functor.IsNull())
+    return FunctorTypeConstructor{types_from(functor.As<Napi::Array>()),
+                                  get_unsigned_integer(object, "id")};
+  return FreeType();
+}
+
+TypeConstructor::Type type_from(Napi::Value const &value) {
+  if (value.IsArray())
+    return constructor_from(value.As<Napi::Array>());
+  else if (value.IsNumber())
+    return value.ToNumber().Uint32Value();
+  else
+    return type_from(value.ToObject());
+}
+
+TypeConstructor::AtomicType
+type_with_variance_from(Napi::Object const &object) {
+  auto const variance =
+      static_cast<Variance>(object.Get("variance").ToNumber().Uint32Value());
+  return {type_from(object.Get("type")), variance};
+}
+
+TypeConstructor::AtomicType type_with_variance_from(Napi::Value const &value) {
+  if (value.IsObject())
+    return type_with_variance_from(value.ToObject());
+  throw std::runtime_error("invalid type found");
+}
+
+template <typename Array>
+TypeConstructor::ConstructorType types_from(Array const &array) {
+  TypeConstructor::ConstructorType constructor;
+
+  std::size_t length = array.Length();
+  constructor.reserve(length);
+  for (auto i = 0u; i < length; ++i)
+    constructor.emplace_back(type_with_variance_from(array[i]));
+  return std::move(constructor);
+}
+
+TypeConstructor constructor_from(Napi::Array const &array) {
+  return {types_from(array)};
+}
+
+TypeConstructor constructor_from(Napi::CallbackInfo const &info) {
+  if (info.Length() == 1 && info[0].IsArray())
+    return constructor_from(info[0].As<Napi::Array>());
+  return {types_from(info)};
+}
+
 } // namespace
 
 namespace Project {
@@ -152,7 +215,8 @@ Napi::Function NodeTypeConstructor::initialize(Napi::Env env) {
   Napi::Function func = DefineClass(
       env, "TypeConstructor",
       {InstanceMethod("compose", &NodeTypeConstructor::compose),
-       InstanceMethod("functorise", &NodeTypeConstructor::functorise)});
+       InstanceMethod("functorise", &NodeTypeConstructor::functorise),
+       InstanceMethod("type_at", &NodeTypeConstructor::type_at)});
 
   g_constructor = Napi::Persistent(func);
   g_constructor.SuppressDestruct();
@@ -181,7 +245,8 @@ Napi::Object NodeTypeConstructor::product_type(Napi::Env env,
 }
 
 NodeTypeConstructor::NodeTypeConstructor(Napi::CallbackInfo const &info)
-    : Napi::ObjectWrap<NodeTypeConstructor>(info), m_type_constructor() {}
+    : Napi::ObjectWrap<NodeTypeConstructor>(info),
+      m_type_constructor(constructor_from(info)) {}
 
 TypeConstructor const &NodeTypeConstructor::type_constructor() const {
   return m_type_constructor;
