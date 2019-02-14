@@ -1,4 +1,4 @@
-import Draggable from 'react-draggable';
+import reactDraggable from 'react-draggable';
 
 interface IPosition {
   readonly x: number;
@@ -19,9 +19,9 @@ function getComponentSelector(selected: boolean): string {
 export function WorksheetComponent(props: IWorksheetComponentProps) {
   return (
     <Draggable
-      axis='both'
+      axis="both"
       defaultPosition={props.defaultPosition}
-      handle='.handle'
+      handle=".handle"
     >
       <div id={getComponentSelector(props.isSelected)} onClick={this.onClick}>
         {props.element}

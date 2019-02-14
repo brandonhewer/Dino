@@ -2,6 +2,7 @@
 #define __NATURAL_TRANSFORMATION_NODE_HPP_
 
 #include "naturality/cospan.hpp"
+#include "naturality/natural_transformation.hpp"
 
 #include <napi.h>
 
@@ -14,15 +15,17 @@ public:
   NodeNaturalTransformation(Napi::CallbackInfo const &);
 
   static Napi::Function initialize(Napi::Env);
+  static Napi::Object create(Napi::CallbackInfo const &);
 
 private:
-  Napi::Value domain(Napi::CallbackInfo const &);
-  Napi::Value codomain(Napi::CallbackInfo const &);
-  Napi::Value type(Napi::CallbackInfo const &);
   Napi::Value graph(Napi::CallbackInfo const &);
+  Napi::Value string(Napi::CallbackInfo const &);
+  Napi::Value cospan_string(Napi::CallbackInfo const &);
+  Napi::Value set_cospan(Napi::CallbackInfo const &);
 
-  Napi::Object m_domain;
-  Napi::Object m_codomain;
+  static Napi::FunctionReference g_constructor;
+
+  NaturalTransformation m_transformation;
   CospanStructure m_type;
 };
 

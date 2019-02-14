@@ -18,6 +18,10 @@ Napi::Value throw_invalid_product_argument(Napi::Env &env) {
   return env.Null();
 }
 
+Napi::Object create_type(Napi::CallbackInfo const &info) {
+  return NodeTypeConstructor::create_type(info);
+}
+
 Napi::Object create_function_type(Napi::CallbackInfo const &info) {
   return NodeTypeConstructor::function_type(info.Env());
 }
@@ -62,13 +66,16 @@ Napi::Object init_all(Napi::Env env, Napi::Object exports) {
   exports.Set(Napi::String::New(env, "create_product_type"),
               Napi::Function::New(env, create_product_type));
 
+  exports.Set(Napi::String::New(env, "create_type"),
+              Napi::Function::New(env, create_type));
+
   exports.Set(Napi::String::New(env, "TypeConstructor"),
               NodeTypeConstructor::initialize(env));
 
   return exports;
 }
 
-NODE_API_MODULE(TypeConstructor, init_all)
+NODE_API_MODULE(PolymorphicTypes, init_all)
 
 } // namespace Types
 } // namespace Project

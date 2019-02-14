@@ -7,7 +7,10 @@ project(DinaturalProject)
 
 include (AddGTest)
 
+find_package(Boost 1.67.0 REQUIRED COMPONENTS system)
+
 add_subdirectory(src/polymorphic_types)
 add_subdirectory(src/naturality)
+add_subdirectory(src/type_parsers)
 
 enable_testing()

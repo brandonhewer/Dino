@@ -13,6 +13,8 @@ public:
   NodeTypeConstructor(Napi::CallbackInfo const &);
 
   static Napi::Function initialize(Napi::Env);
+  static Napi::Object create_type(Napi::CallbackInfo const &);
+  static Napi::Object create_type(Napi::Object const &);
   static Napi::Object function_type(Napi::Env);
   static Napi::Object covariant_type(Napi::Env);
   static Napi::Object contravariant_type(Napi::Env);
@@ -27,9 +29,11 @@ private:
   Napi::Value type_at(Napi::CallbackInfo const &);
 
   static Napi::FunctionReference g_constructor;
-  
+
   TypeConstructor m_type_constructor;
 };
+
+TypeConstructor create_type_constructor(Napi::Value const &value);
 
 } // namespace Types
 } // namespace Project

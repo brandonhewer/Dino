@@ -47,9 +47,9 @@ Napi::Value compose_constructors(NodeTypeConstructor const &lhs,
   return escape_object(scope, compose_constructors(lhs, rhs, constructor));
 }
 
-Napi::Object create_type_constructor(TypeConstructor &&type_constructor,
-                                     Napi::Env &env,
-                                     Napi::FunctionReference &constructor) {
+Napi::Object create_constructor(TypeConstructor &&type_constructor,
+                                Napi::Env &env,
+                                Napi::FunctionReference &constructor) {
   Napi::EscapableHandleScope scope(env);
   Napi::Object func = constructor.New({});
   auto &type = to_type_constructor(func);
@@ -144,16 +144,16 @@ get_constructor_type_and_variance_at(
   return {constructor_type, variance};
 }
 
-TypeConstructor::ConstructorType types_from(Napi::Array const &array);
-TypeConstructor constructor_from(Napi::Array const &array);
+TypeConstructor::ConstructorType types_from(Napi::Array const &);
+TypeConstructor constructor_from(Napi::Array const &);
 
 TypeConstructor::Type type_from(Napi::Object const &object) {
   auto const primitive = object.Get("primitive");
-  if (!primitive.IsNull())
+  if (primitive.IsNumber())
     return static_cast<MonoType>(primitive.ToNumber().Uint32Value());
 
   auto const functor = object.Get("functor");
-  if (!functor.IsNull())
+  if (functor.IsObject())
     return FunctorTypeConstructor{types_from(functor.As<Napi::Array>()),
                                   get_unsigned_integer(object, "id")};
   return FreeType();
@@ -173,6 +173,15 @@ type_with_variance_from(Napi::Object const &object) {
   auto const variance =
       static_cast<Variance>(object.Get("variance").ToNumber().Uint32Value());
   return {type_from(object.Get("type")), variance};
+}
+
+TypeConstructor::ConstructorType types_from(Napi::Array const &array) {
+  TypeConstructor::ConstructorType types;
+
+  std::size_t length = array.Length();
+  for (auto i = 0u; i < length; ++i)
+    types.emplace_back(type_with_variance_from(array[i].ToObject()));
+  return std::move(types);
 }
 
 TypeConstructor::AtomicType type_with_variance_from(Napi::Value const &value) {
@@ -223,25 +232,34 @@ Napi::Function NodeTypeConstructor::initialize(Napi::Env env) {
   return std::move(func);
 }
 
+Napi::Object NodeTypeConstructor::create_type(Napi::CallbackInfo const &info) {
+  std::size_t length = info.Length();
+  std::vector<napi_value> arguments;
+  arguments.reserve(length);
+  for (auto i = 0u; i < length; ++i)
+    arguments.emplace_back(info[i]);
+  return g_constructor.New(std::move(arguments));
+}
+
 Napi::Object NodeTypeConstructor::function_type(Napi::Env env) {
-  return create_type_constructor(create_function_type_constructor(), env,
-                                 g_constructor);
+  return create_constructor(create_function_type_constructor(), env,
+                            g_constructor);
 }
 
 Napi::Object NodeTypeConstructor::covariant_type(Napi::Env env) {
-  return create_type_constructor(create_covariant_type_constructor(), env,
-                                 g_constructor);
+  return create_constructor(create_covariant_type_constructor(), env,
+                            g_constructor);
 }
 
 Napi::Object NodeTypeConstructor::contravariant_type(Napi::Env env) {
-  return create_type_constructor(create_contravariant_type_constructor(), env,
-                                 g_constructor);
+  return create_constructor(create_contravariant_type_constructor(), env,
+                            g_constructor);
 }
 
 Napi::Object NodeTypeConstructor::product_type(Napi::Env env,
                                                std::size_t types) {
-  return create_type_constructor(create_product_type_constructor(types), env,
-                                 g_constructor);
+  return create_constructor(create_product_type_constructor(types), env,
+                            g_constructor);
 }
 
 NodeTypeConstructor::NodeTypeConstructor(Napi::CallbackInfo const &info)
@@ -298,6 +316,12 @@ Napi::Value NodeTypeConstructor::type_at(Napi::CallbackInfo const &info) {
   } catch (std::out_of_range &) {
     return out_of_bound_position_argument(env);
   }
+}
+
+TypeConstructor create_type_constructor(Napi::Value const &value) {
+  if (value.IsArray())
+    return constructor_from(value.As<Napi::Array>());
+  return {{type_with_variance_from(value)}};
 }
 
 } // namespace Types

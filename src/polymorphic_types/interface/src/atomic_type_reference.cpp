@@ -32,6 +32,7 @@ Napi::Value throw_wrong_number_of_set_arguments(Napi::Env &env,
 TypeConstructor::Type get_type(Napi::Value const &value) {
   if (value.IsNumber())
     return value.ToNumber().Uint32Value();
+  throw std::runtime_error("");
 }
 
 } // namespace

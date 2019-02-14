@@ -12,6 +12,10 @@ std::string variance_to_string(Variance variance) {
     return "contravariant";
   case Variance::COVARIANCE:
     return "covariant";
+  case Variance::INVARIANCE:
+    return "invariant";
+  case Variance::BIVARIANCE:
+    return "bivariant";
   }
 }
 

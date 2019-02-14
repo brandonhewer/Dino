@@ -2,14 +2,14 @@ import { Component, MouseEvent } from 'react';
 import { GridLayout } from 'react-grid-layout';
 import { Browser, IBrowserSetup } from '~/browser';
 
-import { 
-  ActionMenu, 
-  IActionMenuSetup 
+import {
+  ActionMenu,
+  IActionMenuSetup,
 } from '~/action_menu';
 
-import { 
-  ComponentMenu, 
-  IComponentMenuSetup 
+import {
+  ComponentMenu,
+  IComponentMenuSetup,
 } from '~/component_menu';
 
 import { WorksheetComponent } from './worksheet-component';
@@ -21,7 +21,7 @@ function removeElementAt<T>(list: T[], index: number): T[] {
 interface IPositionedComponent {
   readonly element: JSX.Element;
   readonly position: [number, number];
-};
+}
 
 interface IWorksheetProps {
   readonly components: IPositionedComponent[];
@@ -32,12 +32,12 @@ interface IWorksheetProps {
 function replaceWorksheetComponent(
   components: IPositionedComponent[],
   index: number,
-  element: JSX.Element
+  element: JSX.Element,
   ) {
-  let newComponents = components.slice();
+  const newComponents = components.slice();
   newComponents[index] = {
-    element: element, 
-    position: components[index].position
+    element,
+    position: components[index].position,
   };
   return newComponents;
 }
@@ -46,10 +46,10 @@ function createWorksheetComponents(props: IWorksheetProps): JSX.Element[] {
   return props.components.map((component, index, _) => {
     return <WorksheetComponent
       element={component.element}
-      defaultPosition={{x: component.position[0], y: component.position[1]}}
+      defaultPosition={{ x: component.position[0], y: component.position[1] }}
       onClick={(e: MouseEvent) => props.onClick(index)}
       isSelected={index === props.selectedComponent}
-    />
+    />;
   });
 }
 
@@ -90,7 +90,7 @@ interface IWorkspaceProps {
   readonly browserSetup: IBrowserSetup;
   readonly actionMenuSetup: IActionMenuSetup;
   readonly componentMenuSetup: IComponentMenuSetup;
-  readonly actions: ((i?: number) => Actions)[];
+  readonly actions: Array<(i?: number) => Actions>;
   readonly actionConnectors: ActionConnector[];
   readonly components: JSX.Element[];
 }
@@ -115,15 +115,27 @@ export class Workspace extends Component<IWorkspaceProps, IWorkspaceState> {
     });
 
     this.windows = [
-      <ComponentMenu 
-        {...this.props.componentMenuSetup} 
+      <ComponentMenu
+        {...this.props.componentMenuSetup}
         onReleaseComponent={onRelease}
       />,
-      <ActionMenu 
-        {...this.props.actionMenuSetup} 
-        onClick={onAction} 
-      />
+      <ActionMenu
+        {...this.props.actionMenuSetup}
+        onClick={onAction}
+      />,
     ];
+  }
+
+  public render(): JSX.Element {
+    return (
+      <GridLayout id="workspace" columns={2} rows={1}>
+        <Browser {...this.props.browserSetup} windows={this.windows}/>;
+        <Worksheet
+          components={this.state.components}
+          onClick={this.selectComponent}
+        />
+      </GridLayout>
+    );
   }
 
   private findAndRunAction(index: number) {
@@ -140,7 +152,7 @@ export class Workspace extends Component<IWorkspaceProps, IWorkspaceState> {
       case WorkspaceActions.ADD_ELEMENT:
         this.addNewComponent(action.element, 0, 0);
         break;
-      case WorkspaceActions.REMOVE_ELEMENT: 
+      case WorkspaceActions.REMOVE_ELEMENT:
         this.removeComponent(action.index);
         break;
       case WorkspaceActions.REPLACE_ELEMENT:
@@ -158,35 +170,23 @@ export class Workspace extends Component<IWorkspaceProps, IWorkspaceState> {
   }
 
   private addNewComponent(component: JSX.Element, x: number, y: number) {
-    this.setState((state, _) => ({ 
+    this.setState((state, _) => ({
       components : state.components.concat([{
         element: component,
         position: [x, y],
-      }])
+      }]),
     }));
   }
 
   private removeComponent(index: number) {
     this.setState((state, _) => ({
-      components : removeElementAt(state.components, index)
+      components : removeElementAt(state.components, index),
     }));
   }
 
   private replaceComponent(index: number, element: JSX.Element) {
     this.setState((state, _) => ({
-      components : replaceWorksheetComponent(state.components, index, element)
+      components : replaceWorksheetComponent(state.components, index, element),
     }));
-  }
-
-  public render(): JSX.Element {
-    return (
-      <GridLayout id='workspace' columns={2} rows={1}>
-        <Browser {...this.props.browserSetup} windows={this.windows}/>;
-        <Worksheet 
-          components={this.state.components} 
-          onClick={this.selectComponent}
-        />
-      </GridLayout>
-    );
   }
 }

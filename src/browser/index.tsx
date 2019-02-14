@@ -1,2 +1,2 @@
-import { IBrowserSetup, IBrowserProps, Browser } from './browser';
+import { Browser, IBrowserProps, IBrowserSetup } from './browser';
 export { IBrowserSetup, IBrowserProps, Browser };
