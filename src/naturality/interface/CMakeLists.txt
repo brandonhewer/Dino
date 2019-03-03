@@ -1,5 +1,6 @@
 add_library(NaturalityNode SHARED
   src/addon.cpp
+  src/graph_builder.cpp
   src/natural_transformation_node.cpp
 )
 

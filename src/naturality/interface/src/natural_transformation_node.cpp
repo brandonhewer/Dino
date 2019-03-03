@@ -1,6 +1,8 @@
 #include "naturality/natural_transformation_node.hpp"
+#include "naturality/graph_builder.hpp"
+#include "naturality/natural_composition.hpp"
 #include "naturality/natural_transformers.hpp"
-#include "polymorphic_types/type_transformers.hpp"
+#include "polymorphic_types/type_to_string.hpp"
 #include "type_parsers/cospan_parser.hpp"
 #include "type_parsers/transformation_parser.hpp"
 
@@ -13,274 +15,6 @@ namespace {
 
 using namespace Project::Naturality;
 using namespace Project::Types;
-
-struct TypeNode {
-  std::size_t type;
-  bool is_domain;
-};
-
-struct GraphData {
-  std::vector<std::vector<Napi::Object>> nodes;
-  std::vector<Napi::Object> transitions;
-  std::vector<Napi::Object> incoming_edges;
-  std::vector<Napi::Object> outgoing_edges;
-  std::vector<Napi::Object> invisible_edges;
-  std::vector<std::size_t> transition_ids;
-  std::size_t node_count;
-};
-
-Napi::Value escape_value(Napi::EscapableHandleScope &scope, Napi::Value value) {
-  return scope.Escape(napi_value(value));
-}
-
-Napi::Object create_type_node(std::size_t identifier, TypeNode const &node,
-                              Variance variance, Napi::Env &env) {
-  Napi::Object object = Napi::Object::New(env);
-  object.Set("id", identifier);
-  object.Set("type", node.type);
-  object.Set("variance", static_cast<std::size_t>(variance));
-  object.Set("count", 0);
-  return std::move(object);
-}
-
-Napi::Object create_transition_node(std::size_t identifier, Napi::Env &env) {
-  Napi::Object object = Napi::Object::New(env);
-  object.Set("id", identifier);
-  return std::move(object);
-}
-
-Napi::Object create_edge(std::size_t source, std::size_t target,
-                         std::size_t distance, Napi::Env &env) {
-  Napi::Object object = Napi::Object::New(env);
-  object.Set("source", source);
-  object.Set("target", target);
-  object.Set("distance", distance);
-  return std::move(object);
-}
-
-Variance invert_variance(Variance variance) {
-  switch (variance) {
-  case Variance::CONTRAVARIANCE:
-    return Variance::COVARIANCE;
-  case Variance::COVARIANCE:
-    return Variance::CONTRAVARIANCE;
-  default:
-    return variance;
-  }
-}
-
-Variance calculate_variance(Variance variance, Variance environment_variance) {
-  switch (environment_variance) {
-  case Variance::CONTRAVARIANCE:
-    return invert_variance(variance);
-  default:
-    return variance;
-  }
-}
-
-bool is_edge_source(TypeNode const &type_node, Variance variance) {
-  return (type_node.is_domain && Variance::COVARIANCE == variance) ||
-         (!type_node.is_domain && Variance::CONTRAVARIANCE == variance);
-}
-
-void create_edge(GraphData &graph, std::size_t node, TypeNode const &type_node,
-                 Variance variance, std::size_t transition, Napi::Env &env) {
-  if (is_edge_source(type_node, variance))
-    graph.incoming_edges.emplace_back(create_edge(node, transition, 2, env));
-  else
-    graph.outgoing_edges.emplace_back(create_edge(transition, node, 2, env));
-}
-
-void generate_graph_part(GraphData &, std::size_t, TypeNode const &, Variance,
-                         Napi::Env &, TypeConstructor const &,
-                         CospanMorphism const &);
-
-void generate_graph_part(GraphData &, std::size_t, TypeNode const &, Variance,
-                         Napi::Env &, FunctorTypeConstructor const &,
-                         CospanMorphism const &);
-
-struct GenerateGraphPart {
-
-  void operator()(GraphData &graph, std::size_t part, TypeNode const &type_node,
-                  Variance variance, Napi::Env &env,
-                  TypeConstructor const &constructor,
-                  CospanMorphism const &morphism) const {
-    generate_graph_part(graph, part, type_node, variance, env, constructor,
-                        morphism);
-  }
-
-  void operator()(GraphData &graph, std::size_t part, TypeNode const &type_node,
-                  Variance variance, Napi::Env &env, std::size_t type,
-                  std::size_t transition) const {
-    if (type == type_node.type) {
-      auto const transition_id =
-          std::distance(graph.transition_ids.begin(),
-                        std::find(graph.transition_ids.begin(),
-                                  graph.transition_ids.end(), transition));
-      create_edge(graph, graph.node_count, type_node, variance, transition_id,
-                  env);
-      auto &nodes = graph.nodes[part];
-      nodes.emplace_back(
-          create_type_node(graph.node_count, type_node, variance, env));
-      ++graph.node_count;
-    }
-  }
-
-  void operator()(GraphData &graph, std::size_t part, TypeNode const &type_node,
-                  Variance variance, Napi::Env &env,
-                  FunctorTypeConstructor const &functor,
-                  CospanMorphism const &morphism) const {
-    generate_graph_part(graph, part, type_node, variance, env, functor,
-                        morphism);
-  }
-
-  template <typename T>
-  void operator()(GraphData &, std::size_t, TypeNode const &, Variance,
-                  Napi::Env &, FunctorTypeConstructor const &,
-                  T const &) const {
-    throw std::runtime_error("cospan type does not match polymorphic type");
-  }
-
-  template <typename T>
-  void operator()(GraphData &, std::size_t, TypeNode const &, Variance,
-                  Napi::Env &, TypeConstructor const &, T const &) const {
-    throw std::runtime_error("cospan type does not match polymorphic type");
-  }
-
-  template <typename T>
-  void operator()(GraphData &, std::size_t, TypeNode const &, Variance,
-                  Napi::Env &, T const &, CospanMorphism const &) const {
-    throw std::runtime_error("cospan type does not match polymorphic type");
-  }
-
-  template <typename T, typename U>
-  void operator()(GraphData &, std::size_t, TypeNode const &, Variance,
-                  Napi::Env &, T const &, U const &) const {}
-} _generate_graph_part;
-
-template <typename F>
-void generate_graph_part(F const &create_graph_part, Variance variance,
-                         TypeConstructor::AtomicType const &type,
-                         CospanMorphism::MappedType const &cospan_type) {
-  if (type.variance != cospan_type.variance)
-    throw std::runtime_error("cospan type does not match polymorphic type");
-
-  auto const create_part =
-      std::bind(create_graph_part, calculate_variance(type.variance, variance),
-                std::placeholders::_1, std::placeholders::_2);
-  std::visit(create_part, type.type, cospan_type.type);
-}
-
-void generate_graph_part(GraphData &graph, std::size_t part,
-                         TypeNode const &type_node, Variance variance,
-                         Napi::Env &env,
-                         TypeConstructor::ConstructorType const &types,
-                         CospanMorphism const &morphism) {
-  if (morphism.map.size() != types.size())
-    throw std::runtime_error("cospan type does not match polymorphic type");
-
-  auto const create_graph_part =
-      std::bind(_generate_graph_part, std::ref(graph), part,
-                std::cref(type_node), std::placeholders::_1, std::ref(env),
-                std::placeholders::_2, std::placeholders::_3);
-
-  for (auto i = 0u; i < morphism.map.size(); ++i)
-    generate_graph_part(create_graph_part, variance, types[i], morphism.map[i]);
-}
-
-void generate_graph_part(GraphData &graph, std::size_t part,
-                         TypeNode const &type_node, Variance variance,
-                         Napi::Env &env, FunctorTypeConstructor const &functor,
-                         CospanMorphism const &morphism) {
-  return generate_graph_part(graph, part, type_node, variance, env,
-                             functor.type, morphism);
-}
-
-void generate_graph_part(GraphData &graph, std::size_t part,
-                         TypeNode const &type_node, Variance variance,
-                         Napi::Env &env, TypeConstructor const &constructor,
-                         CospanMorphism const &morphism) {
-  return generate_graph_part(graph, part, type_node, variance, env,
-                             constructor.type, morphism);
-}
-
-std::vector<Napi::Object> generate_invisible_edges(std::size_t transitions,
-                                                   Napi::Env &env) {
-  std::vector<Napi::Object> edges;
-  for (auto i = 0u; i < transitions - 1; ++i)
-    edges.emplace_back(create_edge(i, i + 1, 1, env));
-  return std::move(edges);
-}
-
-std::vector<Napi::Object>
-generate_transitions(std::vector<std::size_t> const &transitions,
-                     Napi::Env &env) {
-  std::vector<Napi::Object> nodes;
-  nodes.reserve(transitions.size());
-  for (auto &&transition : transitions)
-    nodes.emplace_back(create_transition_node(transition, env));
-  return std::move(nodes);
-}
-
-Napi::Value create_napi_array(std::vector<Napi::Object> const &objects,
-                              Napi::Env &env) {
-  Napi::Array array = Napi::Array::New(env, objects.size());
-  for (auto i = 0u; i < objects.size(); ++i)
-    array[i] = objects[i];
-  return std::move(array);
-}
-
-Napi::Value
-create_napi_array(std::vector<std::vector<Napi::Object>> const &objects,
-                  Napi::Env &env) {
-  Napi::Array array = Napi::Array::New(env, objects.size());
-  for (auto i = 0u; i < objects.size(); ++i)
-    array[i] = create_napi_array(objects[i], env);
-  return std::move(array);
-}
-
-Napi::Value
-create_edges_object(std::vector<Napi::Object> const &incoming_edges,
-                    std::vector<Napi::Object> const &outgoing_edges,
-                    std::vector<Napi::Object> const &invisible_edges,
-                    Napi::Env &env) {
-  Napi::Object edges = Napi::Object::New(env);
-  edges.Set("incoming", create_napi_array(incoming_edges, env));
-  edges.Set("outgoing", create_napi_array(outgoing_edges, env));
-  edges.Set("invisible", create_napi_array(invisible_edges, env));
-  return std::move(edges);
-}
-
-Napi::Value create_graph(GraphData &data, Napi::Env &env,
-                         Napi::EscapableHandleScope &scope) {
-  Napi::Object graph = Napi::Object::New(env);
-  graph.Set("nodes", create_napi_array(data.nodes, env));
-  graph.Set("transitions", create_napi_array(data.transitions, env));
-  graph.Set("edges",
-            create_edges_object(data.incoming_edges, data.outgoing_edges,
-                                data.invisible_edges, env));
-  return escape_value(scope, graph);
-}
-
-Napi::Value generate_graph(TypeConstructor const &domain,
-                           TypeConstructor const &codomain,
-                           CospanStructure const &cospan, std::size_t type,
-                           Napi::Env &env) {
-  GraphData graph;
-  graph.nodes = {{}, {}};
-  graph.node_count = 0;
-
-  Napi::EscapableHandleScope scope(env);
-  graph.transition_ids = extract_cospan_values(cospan);
-  graph.transitions = generate_transitions(graph.transition_ids, env);
-  graph.node_count = graph.transitions.size();
-  graph.invisible_edges = generate_invisible_edges(graph.node_count, env);
-  generate_graph_part(graph, 0, {type, true}, Variance::COVARIANCE, env, domain,
-                      cospan.domain);
-  generate_graph_part(graph, 1, {type, false}, Variance::COVARIANCE, env,
-                      codomain, cospan.codomain);
-  return create_graph(graph, env, scope);
-}
 
 Napi::Value throw_wrong_number_of_graph_arguments(Napi::Env &env,
                                                   std::size_t length) {
@@ -353,6 +87,19 @@ Napi::Value throw_failed_to_generate_graph(std::string const &what,
   return env.Null();
 }
 
+Napi::Value throw_invalid_arguments_to_compose(Napi::Env env) {
+  Napi::TypeError::New(env, "compose expects 1 argument, 0 received")
+      .ThrowAsJavaScriptException();
+  return env.Null();
+}
+
+Napi::Value throw_invalid_argument_type_to_compose(Napi::Env env) {
+  Napi::TypeError::New(env,
+                       "compose expected natural transformation as argument")
+      .ThrowAsJavaScriptException();
+  return env.Null();
+}
+
 NaturalTransformation create_transformation(Napi::Value const &transform) {
   if (transform.IsString())
     return parse_transformation(transform.ToString().Utf8Value());
@@ -368,7 +115,9 @@ NaturalTransformation create_transformation(Napi::Value const &domain_value,
 }
 
 NaturalTransformation create_transformation(Napi::CallbackInfo const &info) {
-  if (info.Length() == 1)
+  if (info.Length() == 0)
+    return NaturalTransformation{};
+  else if (info.Length() == 1)
     return create_transformation(info[0]);
   return create_transformation(info[0], info[1]);
 }
@@ -419,6 +168,14 @@ std::size_t get_type(Napi::Value value,
       "invalid argument. expected integer or string denoting type variable");
 }
 
+NodeNaturalTransformation *get_transformation(Napi::Object object) {
+  return Napi::ObjectWrap<NodeNaturalTransformation>::Unwrap(object);
+}
+
+NodeNaturalTransformation *get_transformation(Napi::Value value) {
+  return get_transformation(value.As<Napi::Object>());
+}
+
 } // namespace
 
 namespace Project {
@@ -430,8 +187,8 @@ NodeNaturalTransformation::NodeNaturalTransformation(
     Napi::CallbackInfo const &info)
     : Napi::ObjectWrap<NodeNaturalTransformation>(info),
       m_transformation(create_transformation(info)),
-      m_type(create_default_cospan(m_transformation.domain,
-                                   m_transformation.codomain)) {}
+      m_type(create_default_cospan(m_transformation.domains[0],
+                                   m_transformation.domains[1])) {}
 
 Napi::Function NodeNaturalTransformation::initialize(Napi::Env env) {
   Napi::HandleScope scope(env);
@@ -463,10 +220,9 @@ Napi::Value NodeNaturalTransformation::graph(Napi::CallbackInfo const &info) {
   if (info.Length() != 1)
     return throw_wrong_number_of_graph_arguments(env, info.Length());
 
-  auto const type = get_type(info[0], m_transformation.symbols);
   try {
-    return generate_graph(m_transformation.domain, m_transformation.codomain,
-                          m_type, type, env);
+    auto const type = get_type(info[0], m_transformation.symbols);
+    return generate_graph(m_transformation.domains, m_type, type, env);
   } catch (std::runtime_error &err) {
     return throw_failed_to_generate_graph(err.what(), info.Env());
   }
@@ -502,6 +258,21 @@ Napi::Value NodeNaturalTransformation::string(Napi::CallbackInfo const &info) {
   Napi::Env env = info.Env();
   Napi::EscapableHandleScope scope(env);
   return Napi::String::New(env, to_string(m_transformation));
+}
+
+Napi::Value NodeNaturalTransformation::compose(Napi::CallbackInfo const &info) {
+  Napi::Env env = info.Env();
+  Napi::EscapableHandleScope scope(env);
+
+  if (info.Length() == 0)
+    return throw_invalid_arguments_to_compose(env);
+
+  auto const *right = get_transformation(info[0]);
+  auto composite_object = g_constructor.New({});
+  auto *composite = get_transformation(composite_object);
+  composite->m_transformation =
+      compose_transformations(m_transformation, right->m_transformation);
+  return composite_object;
 }
 
 } // namespace Naturality

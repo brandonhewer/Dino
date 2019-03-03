@@ -38,6 +38,13 @@ export class TransitionNodes extends Component<ITransitionProps, {}> {
     nodes.call(node_drag(this.props.simulation))
       .on('click', this.props.onClick);
 
+    nodes.attr('class', 'node')
+      .attr('width', this.props.width)
+      .attr('height', this.props.height)
+      .style('fill', this.props.fillColour)
+      .call(node_drag(this.props.simulation))
+      .on('click', this.props.onClick);
+
     nodes.enter().append('rect')
       .attr('class', 'node')
       .attr('width', this.props.width)

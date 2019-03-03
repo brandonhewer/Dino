@@ -24,10 +24,25 @@ TypeConstructor create_type(std::size_t degree, T &&type) noexcept {
   return {constructor_type(degree, std::forward<T>(type))};
 }
 
+TypeConstructor::ConstructorType
+extract_tail(TypeConstructor::ConstructorType const &constructor,
+             std::size_t from) {
+  TypeConstructor::ConstructorType tail;
+  tail.reserve(constructor.size() - from);
+  std::copy(constructor.begin() + from, constructor.end(),
+            std::back_inserter(tail));
+  return std::move(tail);
+}
+
 } // namespace
 
 namespace Project {
 namespace Types {
+
+TypeConstructor tail_constructor(TypeConstructor const &constructor,
+                                 std::size_t from) {
+  return {extract_tail(constructor.type, from)};
+}
 
 TypeConstructor::AtomicType create_covariant_type_parameter() noexcept {
   return TypeConstructor::AtomicType{FreeType{}, Variance::COVARIANCE};

@@ -7,8 +7,7 @@ namespace Project {
 namespace Naturality {
 
 struct NaturalTransformation {
-  Types::TypeConstructor domain;
-  Types::TypeConstructor codomain;
+  std::vector<Types::TypeConstructor> domains;
   std::vector<std::string> symbols;
 };
 

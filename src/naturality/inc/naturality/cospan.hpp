@@ -14,14 +14,14 @@ namespace Naturality {
 struct EmptyType {};
 
 struct CospanMorphism {
-  using Type = std::variant<std::size_t, EmptyType, CospanMorphism>;
+  using Type = std::variant<std::size_t, std::pair<std::size_t, std::size_t>,
+                            EmptyType, CospanMorphism>;
   using MappedType = Types::TypeWithVariance<Type>;
   std::vector<MappedType> map;
 };
 
 struct CospanStructure {
-  CospanMorphism domain;
-  CospanMorphism codomain;
+  std::vector<CospanMorphism> domains;
 };
 
 CospanStructure create_default_cospan(Types::TypeConstructor const &,

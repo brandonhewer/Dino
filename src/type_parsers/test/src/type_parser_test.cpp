@@ -1,4 +1,4 @@
-#include "TypeParserTest.hpp"
+#include "type_parser_test.hpp"
 
 #include "type_parsers/transformation_parser.hpp"
 

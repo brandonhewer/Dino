@@ -1,7 +1,7 @@
 add_executable(TypeParsersTest
   src/main.cpp
-  src/CospanParserTest.cpp
-  src/TypeParserTest.cpp
+  src/cospan_parser_test.cpp
+  src/type_parser_test.cpp
 )
 
 target_include_directories(TypeParsersTest PRIVATE inc)

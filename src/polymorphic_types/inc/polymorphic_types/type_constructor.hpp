@@ -25,6 +25,8 @@ struct FunctorTypeConstructor {
   std::size_t identifier;
 };
 
+TypeConstructor tail_constructor(TypeConstructor const &, std::size_t);
+
 TypeConstructor::AtomicType create_covariant_type_parameter() noexcept;
 
 TypeConstructor::AtomicType create_contravariant_type_parameter() noexcept;

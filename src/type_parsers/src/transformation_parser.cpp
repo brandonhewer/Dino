@@ -149,14 +149,20 @@ TypeConstructor::AtomicType create_functor_type(FunctorType const &type,
           variance};
 }
 
+TypeConstructor::AtomicType
+create_function_type(FunctionType const &function_type, Variance variance) {
+  if (function_type.types.size() == 1)
+    return create_atomic_type(function_type.types[0], variance);
+  return {TypeConstructor{create_constructor_type(function_type)}, variance};
+}
+
 struct CreateAtomicType
     : public boost::static_visitor<TypeConstructor::AtomicType> {
 
   TypeConstructor::AtomicType
   operator()(Variance variance,
              x3::forward_ast<FunctionType> const &function_type) const {
-    return {TypeConstructor{create_constructor_type(function_type.get())},
-            variance};
+    return create_function_type(function_type.get(), variance);
   }
 
   TypeConstructor::AtomicType
@@ -234,8 +240,9 @@ parse_transformation(std::string const &type_string) {
   auto const parsed =
       parse_transform_string(type_string.begin(), type_string.end(), parser,
                              boost::spirit::x3::ascii::space);
-  return {create_constructor(parsed.domain),
-          create_constructor(parsed.codomain), std::move(symbols)};
+  return {
+      {create_constructor(parsed.domain), create_constructor(parsed.codomain)},
+      std::move(symbols)};
 }
 
 Naturality::NaturalTransformation
@@ -251,8 +258,9 @@ parse_transformation(std::string const &domain, std::string const &codomain) {
   auto const parsed_codomain =
       parse_type_string(codomain.begin(), codomain.end(), parser,
                         boost::spirit::x3::ascii::space);
-  return {create_constructor(parsed_domain),
-          create_constructor(parsed_codomain), std::move(symbols)};
+  return {
+      {create_constructor(parsed_domain), create_constructor(parsed_codomain)},
+      std::move(symbols)};
 }
 
 } // namespace Types

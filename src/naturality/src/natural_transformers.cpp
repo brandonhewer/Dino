@@ -5,11 +5,64 @@ namespace {
 using namespace Project::Naturality;
 using namespace Project::Types;
 
+bool is_integer_compatible(TypeConstructor const &);
+
+struct IsTypeIntegerCompatible {
+
+  bool operator()(std::size_t) const { return true; }
+
+  bool operator()(TypeConstructor const &constructor) const {
+    return is_integer_compatible(constructor);
+  }
+
+  template <typename T> bool operator()(T const &) const { return false; }
+} _is_type_integer_compatible;
+
+bool is_integer_compatible(TypeConstructor const &constructor) {
+  return constructor.type.size() == 1 &&
+         std::visit(_is_type_integer_compatible, constructor.type[0].type);
+}
+
+bool is_integer_compatible(CospanMorphism const &);
+
+struct IsCospanIntegerCompatible {
+
+  bool operator()(std::size_t) const { return true; }
+
+  bool operator()(CospanMorphism const &morphism) const {
+    return is_integer_compatible(morphism);
+  }
+
+  template <typename T> bool operator()(T const &) const { return false; }
+
+} _is_cospan_integer_compatible;
+
+bool is_integer_compatible(CospanMorphism const &morphism) {
+  return morphism.map.size() == 1 &&
+         std::visit(_is_cospan_integer_compatible, morphism.map[0].type);
+}
+
+std::optional<CompatibilityError>
+is_cospan_incompatible_with(std::size_t identifier,
+                            CospanMorphism const &morphism) {
+  if (!is_integer_compatible(morphism))
+    return StructureError{identifier, morphism};
+  return std::nullopt;
+}
+
+std::optional<CompatibilityError>
+is_type_incompatible_with(TypeConstructor const &constructor,
+                          std::size_t cospan_value) {
+  if (!is_integer_compatible(constructor))
+    return StructureError{constructor, cospan_value};
+  return std::nullopt;
+}
+
 std::optional<CompatibilityError>
 is_type_incompatible(TypeConstructor::ConstructorType const &,
                      std::vector<CospanMorphism::MappedType> const &);
 
-struct IsCompatible {
+struct IsIncompatible {
 
   std::optional<CompatibilityError> operator()(std::size_t, std::size_t) const {
     return std::nullopt;
@@ -25,6 +78,16 @@ struct IsCompatible {
   operator()(FunctorTypeConstructor const &functor,
              CospanMorphism const &morphism) const {
     return is_type_incompatible(functor.type, morphism.map);
+  }
+
+  std::optional<CompatibilityError>
+  operator()(std::size_t identifier, CospanMorphism const &morphism) const {
+    return is_cospan_incompatible_with(identifier, morphism);
+  }
+
+  std::optional<CompatibilityError> operator()(TypeConstructor const &type,
+                                               std::size_t cospan_value) const {
+    return is_type_incompatible_with(type, cospan_value);
   }
 
   template <typename T>
@@ -56,12 +119,12 @@ struct IsCompatible {
     return std::nullopt;
   }
 
-} _is_compatible;
+} _is_incompatible;
 
 std::optional<CompatibilityError>
 is_type_incompatible(TypeConstructor::Type const &type,
                      CospanMorphism::Type const &cospan_type) {
-  return std::visit(_is_compatible, type, cospan_type);
+  return std::visit(_is_incompatible, type, cospan_type);
 }
 
 std::optional<CompatibilityError>
@@ -99,11 +162,11 @@ is_incompatible(Types::TypeConstructor const &type,
 std::optional<CompatibilityError>
 is_incompatible(NaturalTransformation const &transformation,
                 CospanStructure const &cospan) {
-  if (auto error = is_incompatible(transformation.domain, cospan.domain))
-    return std::move(error);
-  else if (auto error =
-               is_incompatible(transformation.codomain, cospan.codomain))
-    return std::move(error);
+  for (auto i = 0u; i < transformation.domains.size(); ++i) {
+    if (auto error =
+            is_incompatible(transformation.domains[i], cospan.domains[i]))
+      return std::move(error);
+  }
   return std::nullopt;
 }
 

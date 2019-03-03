@@ -63,6 +63,23 @@ export class PlaceNodes extends Component<IPlaceNodesProps, {}> {
       .call(node_drag(this.props.simulation));
 
     nodes.exit().remove();
+
+    const text = d3.select(this.ref)
+      .selectAll('g.nodes')
+      .data(this.props.nodes)
+      .selectAll('text')
+      .data(d => d);
+
+    text.text(d => d.count > 0 ? 'f' : '')
+      .attr('class', 'function')
+      .call(node_drag(this.props.simulation));
+
+    text.enter().append('text')
+      .attr('class', 'function')
+      .text(d => d.count > 0 ? 'f' : '')
+      .call(node_drag(this.props.simulation));
+
+    text.exit().remove();
   }
 
 }

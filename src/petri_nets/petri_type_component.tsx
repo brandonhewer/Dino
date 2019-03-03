@@ -74,7 +74,7 @@ function PetriTypeForm(props: IPetriTypeFormProps) {
         </div>
         <div key="variable">
           <textarea
-            style={{ height:'100%', width:'100%' }}
+            style={{ height:'100%', width:'100%', right:'100px' }}
             value={props.variable}
             onChange={(e: any) => props.setVariable(e.target.value)}
           />
@@ -137,20 +137,25 @@ export class PetriTypeComponent
     );
   }
 
+  private setGraph(transformation: ITransformation, variable: string) {
+    if (variable.length > 0) {
+      try {
+        this.setState({
+          graph: transformation.graph(variable),
+        });
+      } catch (err) {}
+    }
+  }
+
   private setTransformation(transform: string) {
     const transformation = naturality.create_transformation(transform);
 
-    this.setState({ transformation });
-
     this.setState({
+      transformation,
       cospan: transformation.cospan_string(),
     });
 
-    if (this.state.variable.length > 0) {
-      this.setState({
-        graph: transformation.graph(this.state.variable),
-      });
-    }
+    this.setGraph(transformation, this.state.variable);
   }
 
   private setCospan(cospan: string) {
@@ -162,20 +167,11 @@ export class PetriTypeComponent
       return;
     }
 
-    if (this.state.variable.length > 0) {
-      this.setState({
-        graph: this.state.transformation.graph(this.state.variable),
-      });
-    }
+    this.setGraph(this.state.transformation, this.state.variable);
   }
 
   private setVariable(variable: string) {
     this.setState({ variable });
-
-    if (variable.length > 0) {
-      this.setState({
-        graph: this.state.transformation.graph(variable),
-      });
-    }
+    this.setGraph(this.state.transformation, variable);
   }
 }

@@ -1,6 +1,9 @@
 
 add_library(Naturality SHARED
   src/cospan.cpp
+  src/cospan_equality.cpp
+  src/cospan_unification.cpp
+  src/natural_composition.cpp
   src/natural_transformation.cpp
   src/natural_transformers.cpp
 )
@@ -11,9 +14,9 @@ target_include_directories(Naturality
 )
 
 target_link_libraries(Naturality
-  PRIVATE
+  PUBLIC
     PolymorphicTypes
 )
 
 add_subdirectory(interface)
-# add_subdirectory(test)
+add_subdirectory(test)

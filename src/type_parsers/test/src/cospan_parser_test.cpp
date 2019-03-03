@@ -1,4 +1,4 @@
-#include "CospanParserTest.hpp"
+#include "cospan_parser_test.hpp"
 
 #include "type_parsers/cospan_parser.hpp"
 

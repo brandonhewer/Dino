@@ -106,6 +106,8 @@ create_mapped_types(std::vector<CospanType> const &types) {
 
 CospanMorphism::MappedType
 create_cospan_function(CospanFunctionType const &type, Variance variance) {
+  if (type.types.size() == 1)
+    return create_cospan_type(type.types[0], variance);
   return {CospanMorphism{create_mapped_types(type.types)}, variance};
 }
 
@@ -169,8 +171,8 @@ CospanMorphism create_cospan_morphism(CospanType const &type) {
 }
 
 CospanStructure create_cospan_structure(CospanTransform const &transform) {
-  return {create_cospan_morphism(transform.domain),
-          create_cospan_morphism(transform.codomain)};
+  return {{create_cospan_morphism(transform.domain),
+           create_cospan_morphism(transform.codomain)}};
 }
 
 template <typename StartIt, typename EndIt, typename Parser, typename Skipper>
@@ -222,7 +224,7 @@ Naturality::CospanStructure parse_cospan(std::string const &domain_string,
       parse_type_string(domain_string.begin(), domain_string.end());
   auto const codomain =
       parse_type_string(codomain_string.begin(), codomain_string.end());
-  return {create_cospan_morphism(domain), create_cospan_morphism(codomain)};
+  return {{create_cospan_morphism(domain), create_cospan_morphism(codomain)}};
 }
 
 } // namespace Types

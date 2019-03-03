@@ -11,6 +11,8 @@
     "install": "cmake-js compile",
     "build-all": "npm run install && npm run build && npm run less-build && npm run lint-fix",
     "test-parsers": "./build/src/type_parsers/test/TypeParsersTest",
+    "test-types": "./build/src/polymorphic_types/test/PolymorphicTypesTest",
+    "test-naturality": "./build/src/naturality/test/NaturalityTest",
     "start": "electron ."
   },
   "dependencies": {

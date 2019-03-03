@@ -2,17 +2,6 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { PetriTypeComponent } from '../petri_nets';
 
-/*
-const bindings = require('bindings');
-const naturality = bindings('Naturality.node');
-
-const transform = '(a -> a) -> a => (a -> a) -> a';
-const type = '(1 -> 0) -> 0 => (1 -> 0) -> 0';
-
-const transformation = naturality.create_transformation(transform);
-transformation.set_cospan(type);
-*/
-
 const element = (
   <PetriTypeComponent
     width={400}

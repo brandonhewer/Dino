@@ -67,6 +67,12 @@ struct GetCospanValues {
   }
 
   void operator()(std::vector<std::size_t> &values,
+                  std::pair<std::size_t, std::size_t> const &value) const {
+    values.emplace_back(value.first);
+    values.emplace_back(value.second);
+  }
+
+  void operator()(std::vector<std::size_t> &values,
                   CospanMorphism const &morphism) const {
     get_cospan_values(values, morphism);
   }
@@ -135,6 +141,11 @@ struct CospanTypeToString {
     return std::to_string(value);
   }
 
+  std::string
+  operator()(std::pair<std::size_t, std::size_t> const &value) const {
+    return std::to_string(value.first) + ":" + std::to_string(value.second);
+  }
+
   std::string operator()(EmptyType const &) const { return "*"; }
 
   std::string operator()(CospanMorphism const &morphism) const {
@@ -154,14 +165,14 @@ namespace Naturality {
 
 CospanStructure create_default_cospan(Types::TypeConstructor const &domain,
                                       Types::TypeConstructor const &codomain) {
-  return CospanStructure{create_default_from(domain),
-                         create_default_from(codomain)};
+  return CospanStructure{
+      {create_default_from(domain), create_default_from(codomain)}};
 }
 
 std::vector<std::size_t> extract_cospan_values(CospanStructure const &cospan) {
   std::vector<std::size_t> values;
-  get_cospan_values(values, cospan.domain);
-  get_cospan_values(values, cospan.codomain);
+  for (auto &&domain : cospan.domains)
+    get_cospan_values(values, domain);
   std::sort(values.begin(), values.end());
   values.erase(std::unique(values.begin(), values.end()), values.end());
   return std::move(values);
@@ -176,8 +187,8 @@ std::string to_string(CospanMorphism const &morphism) {
 }
 
 std::string to_string(CospanStructure const &structure) {
-  return cospan_morphism_to_string(structure.domain) + " => " +
-         cospan_morphism_to_string(structure.codomain);
+  return cospan_morphism_to_string(structure.domains.front()) + " => " +
+         cospan_morphism_to_string(structure.domains.back());
 }
 
 } // namespace Naturality

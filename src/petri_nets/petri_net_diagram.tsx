@@ -24,22 +24,6 @@ function all(xs: boolean[]): boolean {
   return xs.reduce((x, y) => x && y, true);
 }
 
-function incoming(to: number, edges: IEdge[]): IEdge[] {
-  return edges.filter(edge => edge.target == to);
-}
-
-function activeEdge(edge: IEdge, nodes: IPlaceNode[][]): boolean {
-  return false;
-}
-
-function activeNode(node: INode, edges: IEdge[], nodes: IPlaceNode[][]): boolean {
-  return all(incoming(node.id, edges).map(edge => activeEdge(edge, nodes)));
-}
-
-function active(node: INode, graph: IPetriNet): boolean {
-  return activeNode(node, graph.edges.incoming, graph.nodes);
-}
-
 function createSimulation(nodes: INode[], edges: IEdges, centre: [number, number]): any {
   const links = edges.incoming.concat(
     edges.outgoing,
@@ -67,7 +51,7 @@ export class PetriNetDiagram extends Component<IPetriNetProps, IPetriNetDiagramP
 
   public static getDerivedStateFromProps(nextProps, prevState) {
     const nodes = nextProps.graphData.transitions.concat(...nextProps.graphData.nodes);
-    prevState.simulation.stop();
+    // prevState.simulation.stop();
     return {nodes, simulation: createSimulation(nodes, nextProps.graphData.edges, [
       nextProps.width / 2, nextProps.height / 2,
     ])};
@@ -125,20 +109,59 @@ export class PetriNetDiagram extends Component<IPetriNetProps, IPetriNetDiagramP
           width={this.props.transitionSize}
           height={this.props.transitionSize}
           simulation={this.state.simulation}
-          fillColour={(d: INode) => active(d, this.props.graphData) ? this.props.liveColour : this.props.deadColour}
-          onClick={function (node, index) {}}
+          fillColour={this.getTransitionColour.bind(this)}
+          onClick={this.fireIfActive.bind(this)}
         />
       </svg>
     );
   }
 
+  private fire(incoming: INode[], outgoing: INode[]) {
+    incoming.forEach((node: any) => --node.count);
+    outgoing.forEach((node: any) => ++node.count);
+    this.setState({ nodes: incoming.concat(outgoing) });
+  }
+
+  private fireIfActive(node: INode, _: any): void {
+    const edges = this.props.graphData.edges;
+    const incoming = edges.incoming.filter((edge: any) => (
+      edge.target.id === node.id
+    ));
+
+    if (incoming.length > 0) {
+      const outgoing = edges.outgoing.filter((edge: any) => (
+        edge.source.id === node.id
+      ));
+
+      this.fire(
+        incoming.map((edge: any) => edge.source),
+        outgoing.map((edge: any) => edge.target),
+      );
+    }
+  }
+
+  private isActive(node: INode): boolean {
+    const incoming = this.props.graphData.edges.incoming.filter((edge: any) => (
+      edge.target.id === node.id
+    ));
+    return all(incoming.map((edge: any) => edge.source.count > 0));
+  }
+
+  private getTransitionColour(node: INode): string {
+    return this.isActive(node) ? this.props.liveColour : this.props.deadColour;
+  }
+
   private runSimulation(simulation: any): void {
-    const place = d3.select('.places')
-      .selectAll('.nodes').selectAll('circle.node');
+    const nodes = d3.select('.places').selectAll('.nodes');
+    const place = nodes.selectAll('circle.node');
+    const text = nodes.selectAll('text');
 
     const transition = d3.select('.transitions').selectAll('rect.node');
-    const edge = d3.select('.edges').selectAll('polyline.link');
-    const invisibleEdge = d3.select('.edges').selectAll('line.link');
+    const offset = this.props.transitionSize / 2;
+
+    const edges = d3.select('.edges');
+    const edge = edges.selectAll('polyline.link');
+    const invisibleEdge = edges.selectAll('line.link');
 
     simulation.nodes(this.state.nodes).on('tick', () => {
       edge.attr('points', (d: any) => {
@@ -158,9 +181,12 @@ export class PetriNetDiagram extends Component<IPetriNetProps, IPetriNetDiagramP
       place
         .attr('cx', (d: any) => d.x)
         .attr('cy', (d: any) => d.y);
+      text
+        .attr('x', (d: any) => d.x - 5)
+        .attr('y', (d: any) => d.y + 5);
       transition
-        .attr('x', (d: any) => d.x - this.props.transitionSize / 2)
-        .attr('y', (d: any) => d.y - this.props.transitionSize / 2);
+        .attr('x', (d: any) => d.x - offset)
+        .attr('y', (d: any) => d.y - offset);
     });
   }
 }

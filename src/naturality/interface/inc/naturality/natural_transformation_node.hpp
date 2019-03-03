@@ -22,6 +22,7 @@ private:
   Napi::Value string(Napi::CallbackInfo const &);
   Napi::Value cospan_string(Napi::CallbackInfo const &);
   Napi::Value set_cospan(Napi::CallbackInfo const &);
+  Napi::Value compose(Napi::CallbackInfo const &);
 
   static Napi::FunctionReference g_constructor;
 
