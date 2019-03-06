@@ -1,5 +1,7 @@
 #include "polymorphic_types/substitution.hpp"
 
+#include "polymorphic_types/type_to_string.hpp"
+
 namespace {
 
 using namespace Project::Types;
@@ -17,20 +19,54 @@ TypeConstructor::Type substitute_identifier(Substitution const &substitution,
   return identifier;
 }
 
+TypeConstructor::ConstructorType
+substitute_constructor(Substitution const &substitution,
+                       TypeConstructor::ConstructorType const &constructor) {
+  TypeConstructor::ConstructorType substituted;
+  substituted.reserve(constructor.size());
+  for (auto &&type : constructor)
+    substituted.emplace_back(TypeConstructor::AtomicType{
+        substitute_type(substitution, type.type), type.variance});
+  return std::move(substituted);
+}
+
+TypeConstructor::Type
+substitute_in_functor(Substitution const &substitution,
+                      TypeConstructor::ConstructorType const &types,
+                      std::size_t identifier) {
+  return FunctorTypeConstructor{substitute_constructor(substitution, types),
+                                identifier};
+}
+
+TypeConstructor::Type
+substitute_in_functor(Substitution const &substitution,
+                      FunctorTypeConstructor const &functor) {
+  return substitute_in_functor(substitution, functor.type, functor.identifier);
+}
+
+TypeConstructor::Type
+substitute_in_functor(Substitution const &substitution,
+                      TypeConstructor::Type const &type,
+                      FunctorTypeConstructor const &functor) {
+  if (auto const identifier = std::get_if<std::size_t>(&type))
+    return substitute_in_functor(substitution, functor.type, *identifier);
+  return type;
+}
+
 TypeConstructor::Type
 substitute_functor(Substitution const &substitution,
                    FunctorTypeConstructor const &functor) {
-  return substitute_identifier(substitution, functor.identifier);
+  if (substitution.size() <= functor.identifier)
+    return substitute_in_functor(substitution, functor);
+
+  if (auto const &type = substitution[functor.identifier])
+    return substitute_in_functor(substitution, *type, functor);
+  return substitute_in_functor(substitution, functor);
 }
 
 TypeConstructor substitute_constructor(Substitution const &substitution,
                                        TypeConstructor const &constructor) {
-  TypeConstructor substituted;
-  substituted.type.reserve(constructor.type.size());
-  for (auto &&type : constructor.type)
-    substituted.type.emplace_back(TypeConstructor::AtomicType{
-        substitute_type(substitution, type.type), type.variance});
-  return std::move(substituted);
+  return {substitute_constructor(substitution, constructor.type)};
 }
 
 struct SubstituteType {

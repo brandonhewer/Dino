@@ -5,6 +5,7 @@
 #include <boost/spirit/home/x3.hpp>
 
 #include <functional>
+#include <unordered_map>
 
 namespace {
 
@@ -16,6 +17,24 @@ using boost::spirit::x3::alnum;
 using boost::spirit::x3::alpha;
 using boost::spirit::x3::char_;
 using boost::spirit::x3::no_skip;
+
+struct symbol_map_tag {};
+
+std::size_t
+find_or_insert_symbol(std::unordered_map<std::size_t, std::size_t> &symbol_map,
+                      std::size_t symbol) {
+  auto symbolIt = symbol_map.find(symbol);
+  if (symbol_map.end() == symbolIt)
+    return (symbol_map[symbol] = symbol_map.size());
+  return symbolIt->second;
+}
+
+auto symbol_lookup() {
+  return [](auto const &context) {
+    auto &symbol_map = x3::get<symbol_map_tag>(context).get();
+    x3::_val(context) = find_or_insert_symbol(symbol_map, x3::_attr(context));
+  };
+}
 
 auto const arrow = x3::lit("->");
 auto const transform_arrow = x3::lit("=>");
@@ -32,7 +51,9 @@ auto const polarity = as<CospanPolarity>(positive_polarity | negative_polarity);
 
 x3::rule<struct type, CospanType> const type("type");
 
-auto const atype = as<CospanType>(x3::ulong_long | '(' >> type >> ')');
+auto const identifier = as<std::size_t>(x3::ulong_long[symbol_lookup()]);
+
+auto const atype = as<CospanType>(identifier | '(' >> type >> ')');
 
 auto const space = x3::omit[no_skip[x3::ascii::space]];
 
@@ -170,9 +191,13 @@ CospanMorphism create_cospan_morphism(CospanType const &type) {
   return type.apply_visitor(_create_cospan_morphism);
 }
 
-CospanStructure create_cospan_structure(CospanTransform const &transform) {
-  return {{create_cospan_morphism(transform.domain),
-           create_cospan_morphism(transform.codomain)}};
+CospanStructure create_cospan_structure(CospanTransform const &transform,
+                                        std::size_t start_value,
+                                        std::size_t number_of_values) {
+  std::vector<CospanMorphism> domains = {
+      create_cospan_morphism(transform.domain),
+      create_cospan_morphism(transform.codomain)};
+  return {std::move(domains), start_value, number_of_values};
 }
 
 template <typename StartIt, typename EndIt, typename Parser, typename Skipper>
@@ -185,13 +210,6 @@ CospanTransform parse_transform_string(StartIt start_iterator,
   return std::move(parsed);
 }
 
-template <typename StartIt, typename EndIt>
-CospanTransform parse_transform_string(StartIt start_iterator,
-                                       EndIt end_iterator) {
-  return parse_transform_string(start_iterator, end_iterator, transform,
-                                boost::spirit::x3::ascii::space);
-}
-
 template <typename StartIt, typename EndIt, typename Parser, typename Skipper>
 CospanType parse_type_string(StartIt start_iterator, EndIt end_iterator,
                              Parser const &parser, Skipper &&skipper) {
@@ -201,29 +219,32 @@ CospanType parse_type_string(StartIt start_iterator, EndIt end_iterator,
   return std::move(parsed);
 }
 
-template <typename StartIt, typename EndIt>
-CospanType parse_type_string(StartIt start_iterator, EndIt end_iterator) {
-  return parse_type_string(start_iterator, end_iterator, type,
-                           boost::spirit::x3::ascii::space);
-}
-
 } // namespace
 
 namespace Project {
 namespace Types {
 
 Naturality::CospanStructure parse_cospan(std::string const &cospan_string) {
-  auto const parsed =
-      parse_transform_string(cospan_string.begin(), cospan_string.end());
-  return create_cospan_structure(parsed);
+  std::unordered_map<std::size_t, std::size_t> symbols_map;
+  auto const symbol_parser =
+      boost::spirit::x3::with<symbol_map_tag>(std::ref(symbols_map))[transform];
+  auto parsed =
+      parse_transform_string(cospan_string.begin(), cospan_string.end(),
+                             symbol_parser, boost::spirit::x3::ascii::space);
+  return create_cospan_structure(parsed, 0, symbols_map.size());
 }
 
 Naturality::CospanStructure parse_cospan(std::string const &domain_string,
                                          std::string const &codomain_string) {
+  std::unordered_map<std::size_t, std::size_t> symbols_map;
+  auto const symbol_parser =
+      boost::spirit::x3::with<symbol_map_tag>(std::ref(symbols_map))[type];
   auto const domain =
-      parse_type_string(domain_string.begin(), domain_string.end());
+      parse_type_string(domain_string.begin(), domain_string.end(),
+                        symbol_parser, boost::spirit::x3::ascii::space);
   auto const codomain =
-      parse_type_string(codomain_string.begin(), codomain_string.end());
+      parse_type_string(codomain_string.begin(), codomain_string.end(),
+                        symbol_parser, boost::spirit::x3::ascii::space);
   return {{create_cospan_morphism(domain), create_cospan_morphism(codomain)}};
 }
 

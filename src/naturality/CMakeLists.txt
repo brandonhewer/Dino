@@ -2,7 +2,8 @@
 add_library(Naturality SHARED
   src/cospan.cpp
   src/cospan_equality.cpp
-  src/cospan_unification.cpp
+  src/cospan_renaming.cpp
+  src/cospan_to_string.cpp
   src/natural_composition.cpp
   src/natural_transformation.cpp
   src/natural_transformers.cpp

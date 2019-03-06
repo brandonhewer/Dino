@@ -22,16 +22,12 @@ struct CospanMorphism {
 
 struct CospanStructure {
   std::vector<CospanMorphism> domains;
+  std::size_t start_identifier;
+  std::size_t number_of_identifiers;
 };
 
 CospanStructure create_default_cospan(Types::TypeConstructor const &,
                                       Types::TypeConstructor const &);
-
-std::vector<std::size_t> extract_cospan_values(CospanStructure const &cospan);
-
-std::string to_string(CospanMorphism::Type const &type);
-std::string to_string(CospanMorphism const &morphism);
-std::string to_string(CospanStructure const &structure);
 
 } // namespace Naturality
 } // namespace Project

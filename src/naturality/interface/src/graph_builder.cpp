@@ -16,7 +16,7 @@ struct GraphData {
   std::vector<Napi::Object> incoming_edges;
   std::vector<Napi::Object> outgoing_edges;
   std::vector<Napi::Object> invisible_edges;
-  std::vector<std::size_t> transition_ids;
+  std::size_t transition_ids;
   std::size_t node_count;
 };
 
@@ -90,12 +90,6 @@ void generate_graph_part(GraphData &, std::size_t, TypeNode const &, Variance,
                          Napi::Env &, FunctorTypeConstructor const &,
                          CospanMorphism const &);
 
-std::size_t find_transition_id(GraphData &graph, std::size_t transition) {
-  return std::distance(graph.transition_ids.begin(),
-                       std::find(graph.transition_ids.begin(),
-                                 graph.transition_ids.end(), transition));
-}
-
 void add_graph_node(GraphData &graph, std::size_t part,
                     TypeNode const &type_node, Variance variance,
                     Napi::Env &env) {
@@ -107,8 +101,7 @@ void add_graph_node(GraphData &graph, std::size_t part,
 
 void add_graph_edge(GraphData &graph, TypeNode const &type_node,
                     Variance variance, Napi::Env &env, std::size_t transition) {
-  create_edge(graph, graph.node_count, type_node, variance,
-              find_transition_id(graph, transition), env);
+  create_edge(graph, graph.node_count, type_node, variance, transition, env);
 }
 
 void create_graph_part(GraphData &graph, std::size_t part,
@@ -234,18 +227,20 @@ void generate_graph_part(GraphData &graph, std::size_t part,
 
 std::vector<Napi::Object> generate_invisible_edges(std::size_t transitions,
                                                    Napi::Env &env) {
+  if (transitions == 0)
+    return {};
+
   std::vector<Napi::Object> edges;
   for (auto i = 0u; i < transitions - 1; ++i)
     edges.emplace_back(create_edge(i, i + 1, 1, env));
   return std::move(edges);
 }
 
-std::vector<Napi::Object>
-generate_transitions(std::vector<std::size_t> const &transitions,
-                     Napi::Env &env) {
+std::vector<Napi::Object> generate_transitions(std::size_t transitions,
+                                               Napi::Env &env) {
   std::vector<Napi::Object> nodes;
-  nodes.reserve(transitions.size());
-  for (auto &&transition : transitions)
+  nodes.reserve(transitions);
+  for (auto transition = 0u; transition < transitions; ++transition)
     nodes.emplace_back(create_transition_node(transition, env));
   return std::move(nodes);
 }
@@ -319,7 +314,7 @@ Napi::Value generate_graph(std::vector<TypeConstructor> const &domains,
   graph.node_count = 0;
 
   Napi::EscapableHandleScope scope(env);
-  graph.transition_ids = extract_cospan_values(cospan);
+  graph.transition_ids = cospan.number_of_identifiers;
   graph.transitions = generate_transitions(graph.transition_ids, env);
   graph.node_count = graph.transitions.size();
   graph.invisible_edges = generate_invisible_edges(graph.node_count, env);

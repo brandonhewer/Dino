@@ -1,4 +1,5 @@
 #include "naturality/natural_transformation_node.hpp"
+#include "naturality/cospan_to_string.hpp"
 #include "naturality/graph_builder.hpp"
 #include "naturality/natural_composition.hpp"
 #include "naturality/natural_transformers.hpp"
@@ -199,7 +200,8 @@ Napi::Function NodeNaturalTransformation::initialize(Napi::Env env) {
        InstanceMethod("string", &NodeNaturalTransformation::string),
        InstanceMethod("cospan_string",
                       &NodeNaturalTransformation::cospan_string),
-       InstanceMethod("set_cospan", &NodeNaturalTransformation::set_cospan)});
+       InstanceMethod("set_cospan", &NodeNaturalTransformation::set_cospan),
+       InstanceMethod("compose", &NodeNaturalTransformation::compose)});
 
   g_constructor = Napi::Persistent(func);
   g_constructor.SuppressDestruct();

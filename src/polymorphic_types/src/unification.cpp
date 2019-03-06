@@ -35,8 +35,6 @@ bool unify_functor(Unification &unification,
                    FunctorTypeConstructor const &functor,
                    TypeConstructor const &constructor) {
   auto const &nested = get_nested(constructor);
-  if (nested.type.size() != functor.type.size())
-    return false;
 
   if (auto const &current = unification.left[functor.identifier])
     return is_equal(*current, nested);
@@ -51,8 +49,6 @@ bool unify_functor(Unification &unification,
 bool unify_functor(Unification &unification, TypeConstructor const &constructor,
                    FunctorTypeConstructor const &functor) {
   auto const &nested = get_nested(constructor);
-  if (nested.type.size() != functor.type.size())
-    return false;
 
   if (auto const &current = unification.right[functor.identifier])
     return is_equal(*current, nested);
@@ -74,7 +70,7 @@ struct ComputeUnification {
 
   bool operator()(Unification &unification, std::size_t left,
                   std::size_t right) const {
-    return unify_identifier(unification.left, left, right);
+    return unify_identifier(unification.right, right, left);
   }
 
   template <typename T>

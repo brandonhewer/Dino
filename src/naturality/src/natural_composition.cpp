@@ -1,5 +1,4 @@
 #include "naturality/natural_composition.hpp"
-#include "naturality/cospan_unification.hpp"
 #include "polymorphic_types/substitution.hpp"
 #include "polymorphic_types/type_replacement.hpp"
 #include "polymorphic_types/unification.hpp"
@@ -17,27 +16,93 @@ struct LRReplacements {
   std::size_t number;
 };
 
-Replacements shifted_identifiers(Substitution const &substitution,
-                                 std::size_t &offset) {
-  Replacements shift;
-  shift.reserve(substitution.size());
+void add_shifted_identifiers(Replacements &, std::size_t &,
+                             TypeConstructor::Type const &);
 
-  for (auto &&replacement : substitution) {
-    if (!replacement.has_value())
-      shift.emplace_back(offset++);
-    else
-      shift.emplace_back(std::nullopt);
+void shift_constructor_identifiers(
+    Replacements &replacements, std::size_t &offset,
+    TypeConstructor::ConstructorType const &constructor) {
+  for (auto &&type : constructor)
+    add_shifted_identifiers(replacements, offset, type.type);
+}
+
+void shift_constructor_identifiers(Replacements &replacements,
+                                   std::size_t &offset,
+                                   TypeConstructor const &constructor) {
+  shift_constructor_identifiers(replacements, offset, constructor.type);
+}
+
+void shift_functor_identifiers(Replacements &replacements, std::size_t &offset,
+                               FunctorTypeConstructor const &functor) {
+  if (!replacements[functor.identifier].has_value())
+    replacements[functor.identifier] = offset++;
+  shift_constructor_identifiers(replacements, offset, functor.type);
+}
+
+struct AddShiftedIdentifiers {
+
+  void operator()(Replacements &replacements, std::size_t &offset,
+                  std::size_t identifier) const {
+    if (!replacements[identifier].has_value())
+      replacements[identifier] = offset++;
   }
-  return std::move(shift);
+
+  void operator()(Replacements &replacements, std::size_t &offset,
+                  TypeConstructor const &constructor) const {
+    shift_constructor_identifiers(replacements, offset, constructor);
+  }
+
+  void operator()(Replacements &replacements, std::size_t &offset,
+                  FunctorTypeConstructor const &functor) const {
+    shift_functor_identifiers(replacements, offset, functor);
+  }
+
+  template <typename T>
+  void operator()(Replacements &, std::size_t &, T const &) const {}
+
+} _add_shifted_identifiers;
+
+void add_shifted_identifiers(Replacements &replacements, std::size_t &offset,
+                             TypeConstructor::Type const &type) {
+  std::visit(std::bind(_add_shifted_identifiers, std::ref(replacements),
+                       std::ref(offset), std::placeholders::_1),
+             type);
+}
+
+void shift_used_in_identifiers(Substitution const &substitution,
+                               Replacements &shifted, std::size_t &offset) {
+  for (auto &&replacement : substitution) {
+    if (replacement.has_value())
+      add_shifted_identifiers(shifted, offset, *replacement);
+  }
+}
+
+void shift_identifiers(Substitution const &substitution, Replacements &shifted,
+                       std::size_t &offset) {
+  for (auto i = 0u; i < substitution.size(); ++i) {
+    if (!substitution[i].has_value())
+      shifted[i] = offset++;
+  }
+}
+
+void shift_identifiers(Substitution const &substitution,
+                       Substitution const &used_in, Replacements &shifted,
+                       std::size_t &offset) {
+  shift_identifiers(substitution, shifted, offset);
+  shift_used_in_identifiers(used_in, shifted, offset);
 }
 
 LRReplacements calculate_replacements(Unification &unification) {
   LRReplacements replacements;
   replacements.number = 0;
-  replacements.left =
-      shifted_identifiers(unification.left, replacements.number);
-  replacements.right =
-      shifted_identifiers(unification.right, replacements.number);
+  replacements.left = Replacements(unification.left.size(), std::nullopt);
+  replacements.right = Replacements(unification.right.size(), std::nullopt);
+
+  shift_identifiers(unification.left, unification.right, replacements.left,
+                    replacements.number);
+  shift_identifiers(unification.right, unification.left, replacements.right,
+                    replacements.number);
+
   return std::move(replacements);
 }
 
@@ -47,8 +112,8 @@ void apply_replacements(
   for (auto i = 0u; i < substitutions.size(); ++i) {
     if (auto substitution = substitutions[i])
       replace_identifiers(*substitution, replacements);
-    else
-      substitutions[i] = new_substitutions[i];
+    else if (auto substitution = new_substitutions[i])
+      substitutions[i] = substitution;
   }
 }
 
@@ -132,7 +197,7 @@ compose_transformations(NaturalTransformation const &left,
                             left.symbols.size(), right.symbols.size());
 
   if (!unification)
-    throw std::runtime_error("Failed to compose");
+    throw std::runtime_error("Failed to compose types");
   return compose_with(left, right, *unification);
 }
 

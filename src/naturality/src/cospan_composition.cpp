@@ -1,10 +1,7 @@
-#include "naturality/cospan.hpp"
-#include "naturality/natural_transformation.hpp"
-
-#include <algorithm>
-#include <functional>
+#include "naturality/cospan_composition.hpp"
 
 namespace {
+
 using namespace Project::Naturality;
 using namespace Project::Types;
 
@@ -63,12 +60,10 @@ CospanMorphism create_default_from(TypeConstructor const &constructor) {
 namespace Project {
 namespace Naturality {
 
-CospanStructure create_default_cospan(Types::TypeConstructor const &domain,
-                                      Types::TypeConstructor const &codomain) {
-  std::vector<CospanMorphism> domains = {create_default_from(domain),
-                                         create_default_from(codomain)};
-  return CospanStructure{std::move(domains), 0, 1};
-}
+CospanStructure compose_cospans(CospanStructure const &left,
+                                CospanStructure const &right,
+                                NaturalTransformation const &transformation,
+                                std::size_t boundary) {}
 
 } // namespace Naturality
 } // namespace Project

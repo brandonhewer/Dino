@@ -80,7 +80,7 @@ test_unify_result(TypeConstructor const &left, TypeConstructor const &right,
                           expected);
 }
 
-} // namespace
+} // namespaces
 
 UnificationTest::UnificationTest() {}
 
