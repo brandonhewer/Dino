@@ -45,32 +45,20 @@ struct ZipCospanTypes {
   }
 
   template <typename T>
-  CospanMorphism::Type operator()(CospanMorphism const &, T const &) const {
-    throw std::runtime_error(
-        "attempted to zip cospan morphism with invalid structure");
-  }
-
-  template <typename T>
-  CospanMorphism::Type operator()(T const &, CospanMorphism const &) const {
-    throw std::runtime_error(
-        "attempted to zip cospan morphism with invalid structure");
-  }
-
-  CospanMorphism::Type operator()(CospanMorphism::PairType const &,
+  CospanMorphism::Type operator()(CospanMorphism const &,
                                   CospanMorphism::PairType const &) const {
-    throw std::runtime_error("unable to zip cospan pair type");
+    throw std::runtime_error("attempted to zip cospan morphism with pair");
   }
 
   template <typename T>
   CospanMorphism::Type operator()(CospanMorphism::PairType const &,
-                                  T const &) const {
-    throw std::runtime_error("unable to zip cospan pair type");
+                                  CospanMorphism const &) const {
+    throw std::runtime_error("attempted to zip pair with cospan morphism");
   }
 
-  template <typename T>
-  CospanMorphism::Type operator()(T const &,
+  CospanMorphism::Type operator()(CospanMorphism::PairType const &,
                                   CospanMorphism::PairType const &) const {
-    throw std::runtime_error("unable to zip cospan pair type");
+    throw std::runtime_error("unable to zip cospan pair types");
   }
 
   template <typename T, typename U>
