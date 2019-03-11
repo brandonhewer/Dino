@@ -56,7 +56,6 @@ struct ZipCospanTypes {
         "attempted to zip cospan morphism with invalid structure");
   }
 
-  template <typename T>
   CospanMorphism::Type operator()(CospanMorphism::PairType const &,
                                   CospanMorphism::PairType const &) const {
     throw std::runtime_error("unable to zip cospan pair type");
