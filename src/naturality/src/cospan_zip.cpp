@@ -73,11 +73,6 @@ struct ZipCospanTypes {
     throw std::runtime_error("unable to zip cospan pair type");
   }
 
-  template <typename T, typename U>
-  CospanMorphism::Type operator()(T const &, U const &) const {
-    throw std::runtime_error("unable to zip cospans type");
-  }
-
 } _zip_cospan_types;
 
 } // namespace
@@ -102,9 +97,9 @@ CospanMorphism zip_cospan_morphisms(CospanMorphism const &left,
   zipped.map.reserve(expected_size);
   for (auto i = 0u; i < expected_size; ++i) {
     auto const left_type = left.map[i];
-    zipped.map.emplace_back(CospanMorphism::MappedType{zip_cospan_types(
-                                left_type.type, right.map[i].type)},
-                            left_type.variance);
+    zipped.map.emplace_back(CospanMorphism::MappedType{
+        zip_cospan_types(left_type.type, right.map[i].type),
+        left_type.variance});
   }
   return std::move(zipped);
 }
