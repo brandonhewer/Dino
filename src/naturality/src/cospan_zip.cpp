@@ -32,13 +32,15 @@ struct ZipCospanTypes {
         "attempted to zip cospans with differing structures");
   }
 
-  CospanMorphism::Type operator()(EmptyType, EmptyType) { return EmptyType{}; }
+  CospanMorphism::Type operator()(EmptyType, EmptyType) const {
+    return EmptyType{};
+  }
 
-  CospanMorphism::Type operator()(EmptyType, std::size_t right) {
+  CospanMorphism::Type operator()(EmptyType, std::size_t right) const {
     return CospanMorphism::PairType{0, right};
   }
 
-  CospanMorphism::Type operator()(std::size_t left, EmptyType) {
+  CospanMorphism::Type operator()(std::size_t left, EmptyType) const {
     return CospanMorphism::PairType{left, 0};
   }
 
@@ -55,7 +57,7 @@ struct ZipCospanTypes {
   }
 
   template <typename T>
-  CospanMorphism::Type operator()(T const &,
+  CospanMorphism::Type operator()(CospanMorphism::PairType const &,
                                   CospanMorphism::PairType const &) const {
     throw std::runtime_error("unable to zip cospan pair type");
   }
