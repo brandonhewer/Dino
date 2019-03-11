@@ -73,6 +73,11 @@ struct ZipCospanTypes {
     throw std::runtime_error("unable to zip cospan pair type");
   }
 
+  template <typename T, typename U>
+  CospanMorphism::Type operator()(T const &, U const &) const {
+    throw std::runtime_error("unable to zip cospans type");
+  }
+
 } _zip_cospan_types;
 
 } // namespace
