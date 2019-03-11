@@ -10,6 +10,8 @@ CospanMorphism const &get_nested(CospanMorphism const &);
 
 std::size_t const *get_identifier(CospanMorphism const &);
 
+CospanMorphism::PairType const *get_pair(CospanMorphism const &);
+
 bool is_equal(CospanMorphism const &, CospanMorphism const &);
 
 bool is_equal(CospanMorphism::Type const &, CospanMorphism const &);
@@ -18,8 +20,7 @@ bool is_equal(CospanMorphism::Type const &, std::size_t);
 
 bool is_equal(CospanMorphism::Type const &, EmptyType);
 
-bool is_equal(CospanMorphism::Type const &,
-              std::pair<std::size_t, std::size_t> const &);
+bool is_equal(CospanMorphism::Type const &, CospanMorphism::PairType const &);
 
 } // namespace Naturality
 } // namespace Project

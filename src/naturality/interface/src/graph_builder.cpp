@@ -227,10 +227,9 @@ void generate_graph_part(GraphData &graph, std::size_t part,
 
 std::vector<Napi::Object> generate_invisible_edges(std::size_t transitions,
                                                    Napi::Env &env) {
-  if (transitions == 0)
-    return {};
-
   std::vector<Napi::Object> edges;
+  edges.reserve(transitions - 1);
+
   for (auto i = 0u; i < transitions - 1; ++i)
     edges.emplace_back(create_edge(i, i + 1, 1, env));
   return std::move(edges);
@@ -311,15 +310,15 @@ Napi::Value generate_graph(std::vector<TypeConstructor> const &domains,
   GraphData graph;
   graph.nodes = std::vector<std::vector<Napi::Object>>(
       domains.size(), std::vector<Napi::Object>());
-  graph.node_count = 0;
 
   Napi::EscapableHandleScope scope(env);
   graph.transition_ids = cospan.number_of_identifiers;
+  graph.node_count = graph.transition_ids;
+  graph.invisible_edges = generate_invisible_edges(graph.transition_ids, env);
   graph.transitions = generate_transitions(graph.transition_ids, env);
-  graph.node_count = graph.transitions.size();
-  graph.invisible_edges = generate_invisible_edges(graph.node_count, env);
 
   generate_graph_parts(graph, domains, cospan, type, env);
+
   return create_graph(graph, env, scope);
 }
 

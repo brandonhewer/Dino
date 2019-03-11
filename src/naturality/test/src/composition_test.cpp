@@ -211,9 +211,7 @@ TEST(CompositionTest, Y_TO_TRUE_IDENTITY_TEST) {
 TEST(CompositionTest, EVAL_TRANS_DIAG_TEST) {
   auto const eval = evaluation_map_and_id();
   auto const diag = diagonal_and_function();
-  std::cout << to_string(eval) << "\n";
-  std::cout << to_string(diag) << "\n";
-  auto const composite = compose_transformations(eval, diag);
+  auto const composite = compose_transformations(diag, eval);
   std::cout << to_string(eval) << "\n";
   std::cout << to_string(diag) << "\n";
   std::cout << to_string(composite.domains[1], composite.symbols) << "\n";

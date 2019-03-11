@@ -67,8 +67,8 @@ bool is_equal_types(std::size_t left, std::size_t right) {
   return left == right;
 }
 
-bool is_equal_types(std::pair<std::size_t, std::size_t> const &left,
-                    std::pair<std::size_t, std::size_t> const &right) {
+bool is_equal_types(CospanMorphism::PairType const &left,
+                    CospanMorphism::PairType const &right) {
   return left.first == right.first && left.second == right.second;
 }
 
@@ -87,8 +87,8 @@ struct IsEqualTypes {
     return is_equal_types(left, right);
   }
 
-  bool operator()(std::pair<std::size_t, std::size_t> const &left,
-                  std::pair<std::size_t, std::size_t> const &right) const {
+  bool operator()(CospanMorphism::PairType const &left,
+                  CospanMorphism::PairType const &right) const {
     return is_equal_types(left, right);
   }
 
@@ -134,6 +134,10 @@ std::size_t const *get_identifier(CospanMorphism const &morphism) {
   return extract_type<std::size_t>(extract_nested(morphism));
 }
 
+CospanMorphism::PairType const *get_pair(CospanMorphism const &morphism) {
+  return extract_type<CospanMorphism::PairType>(extract_nested(morphism));
+}
+
 bool is_equal(CospanMorphism const &left, CospanMorphism const &right) {
   return is_equal_types(left, right);
 }
@@ -152,9 +156,8 @@ bool is_equal(CospanMorphism::Type const &type, EmptyType) {
 }
 
 bool is_equal(CospanMorphism::Type const &type,
-              std::pair<std::size_t, std::size_t> const &identifiers) {
-  return is_equal_types(
-      *extract_type<std::pair<std::size_t, std::size_t>>(type), identifiers);
+              CospanMorphism::PairType const &types) {
+  return is_equal_types(*extract_type<CospanMorphism::PairType>(type), types);
 }
 
 } // namespace Naturality

@@ -69,6 +69,11 @@ struct IsIncompatible {
   }
 
   std::optional<CompatibilityError>
+  operator()(std::size_t, CospanMorphism::PairType const &) const {
+    return std::nullopt;
+  }
+
+  std::optional<CompatibilityError>
   operator()(TypeConstructor const &type,
              CospanMorphism const &morphism) const {
     return is_type_incompatible(type.type, morphism.map);

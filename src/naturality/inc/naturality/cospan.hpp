@@ -4,6 +4,7 @@
 #include "polymorphic_types/type_constructor.hpp"
 
 #include <cstddef>
+#include <memory>
 #include <string>
 #include <variant>
 #include <vector>
@@ -14,8 +15,8 @@ namespace Naturality {
 struct EmptyType {};
 
 struct CospanMorphism {
-  using Type = std::variant<std::size_t, std::pair<std::size_t, std::size_t>,
-                            EmptyType, CospanMorphism>;
+  using PairType = std::pair<std::size_t, std::size_t>;
+  using Type = std::variant<std::size_t, PairType, EmptyType, CospanMorphism>;
   using MappedType = Types::TypeWithVariance<Type>;
   std::vector<MappedType> map;
 };

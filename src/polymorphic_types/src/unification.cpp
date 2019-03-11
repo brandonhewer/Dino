@@ -21,14 +21,9 @@ bool unify_identifier(
 
 bool unify_functor(Unification &unification, FunctorTypeConstructor const &left,
                    FunctorTypeConstructor const &right) {
-  if (auto const &current = unification.left[left.identifier])
-    return is_equal(*current, right);
-
   if (!compute_unification(left.type, right.type, unification))
     return false;
-
-  unification.left[left.identifier] = right;
-  return true;
+  return unify_identifier(unification.left, left.identifier, right.identifier);
 }
 
 bool unify_functor(Unification &unification,

@@ -58,8 +58,7 @@ struct CospanTypeToString {
     return std::to_string(value);
   }
 
-  std::string
-  operator()(std::pair<std::size_t, std::size_t> const &value) const {
+  std::string operator()(CospanMorphism::PairType const &value) const {
     return std::to_string(value.first) + ":" + std::to_string(value.second);
   }
 
