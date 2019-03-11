@@ -11,11 +11,11 @@ using namespace Project::Types;
 
 template <typename StartCospanIt, typename StartTransformIt>
 void add_substituted_domains(
-    StartCospanIt start_cospan, StartTransformIt start_transform,
-    std::size_t domains,
+    std::vector<CospanMorphism> &domains, StartCospanIt start_cospan,
+    StartTransformIt start_transform, std::size_t number_of_domains,
     std::vector<std::optional<TypeConstructor::Type>> const &unification,
     VariableSubstitution &substitutions) {
-  for (auto i = 0u; i < domains; ++i)
+  for (auto i = 0u; i < number_of_domains; ++i)
     domains.emplace_back(cospan_substitution(substitutions, unification,
                                              *(start_cospan + i),
                                              *(start_transform + i)));
@@ -24,13 +24,13 @@ void add_substituted_domains(
 template <typename StartCospanIt, typename StartTransformIt>
 std::vector<CospanMorphism> get_substituted_domains(
     StartCospanIt start_cospan, StartTransformIt start_transform,
-    std::size_t domains,
+    std::size_t number_of_domains,
     std::vector<std::optional<TypeConstructor::Type>> const &unification,
     VariableSubstitution &substitutions) {
   std::vector<CospanMorphism> domains;
-  domains.reserve(domains);
-  add_substituted_domains(start_cospan, start_transform, domains,
-                          transformation, unification, substitutions);
+  domains.reserve(number_of_domains);
+  add_substituted_domains(domains, start_cospan, start_transform,
+                          number_of_domains, unification, substitutions);
   return std::move(domains);
 }
 
@@ -70,7 +70,7 @@ CospanStructure compose_cospans(CospanStructure const &left_cospan,
       left_transform.domains.back(), right_transform.domains.back(),
       unification, left_substitution, right_substitution));
 
-  add_substituted_domains(right_cospan.domains.begin() + 1,
+  add_substituted_domains(domains, right_cospan.domains.begin() + 1,
                           right_transform.domains.begin() + 1,
                           right_transform.domains.size() - 1, unification.right,
                           right_substitution);
