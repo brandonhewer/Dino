@@ -106,7 +106,7 @@ export class Workspace extends Component<IWorkspaceProps, IWorkspaceState> {
   constructor(props: IWorkspaceProps) {
     super(props);
     this.state = { components: [] };
-    
+
     const onAction = (i: number) => (_: MouseEvent) => this.findAndRunAction(i);
     const onRelease = (i: number) => (e: MouseEvent) => this.addComponent(i, e);
 

@@ -10,10 +10,12 @@ namespace Project {
 namespace Types {
 
 std::string to_string(TypeConstructor const &constructor,
-                      std::vector<std::string> const &symbols);
+                      std::vector<std::string> const &symbols,
+                      std::vector<std::string> const &functor_symbols);
 
 std::string to_string(TypeConstructor::Type const &type,
-                      std::vector<std::string> const &symbols);
+                      std::vector<std::string> const &symbols,
+                      std::vector<std::string> const &functor_symbols);
 
 } // namespace Types
 } // namespace Project

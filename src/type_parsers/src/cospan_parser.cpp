@@ -1,6 +1,8 @@
 #include "type_parsers/cospan_parser.hpp"
 #include "type_parsers/cospan_ast.hpp"
 
+#include "naturality/cospan_shared_count.hpp"
+
 #include <boost/bind.hpp>
 #include <boost/spirit/home/x3.hpp>
 
@@ -166,7 +168,6 @@ CospanMorphism::MappedType create_cospan_type(CospanType const &type,
 }
 
 struct CreateCospanMorphism : boost::static_visitor<CospanMorphism> {
-
   CospanMorphism operator()(std::size_t value) const {
     return {{{value, Variance::COVARIANCE}}};
   }
@@ -193,11 +194,13 @@ CospanMorphism create_cospan_morphism(CospanType const &type) {
 
 CospanStructure create_cospan_structure(CospanTransform const &transform,
                                         std::size_t start_value,
-                                        std::size_t number_of_values) {
+                                        std::size_t total_number) {
   std::vector<CospanMorphism> domains = {
       create_cospan_morphism(transform.domain),
       create_cospan_morphism(transform.codomain)};
-  return {std::move(domains), start_value, number_of_values};
+  auto number_of_identifiers = shared_count(domains);
+  return {std::move(domains), std::move(number_of_identifiers), start_value,
+          total_number};
 }
 
 template <typename StartIt, typename EndIt, typename Parser, typename Skipper>
@@ -242,9 +245,11 @@ Naturality::CospanStructure parse_cospan(std::string const &domain_string,
   auto const domain =
       parse_type_string(domain_string.begin(), domain_string.end(),
                         symbol_parser, boost::spirit::x3::ascii::space);
+  auto const left_symbols = symbols_map.size();
   auto const codomain =
       parse_type_string(codomain_string.begin(), codomain_string.end(),
                         symbol_parser, boost::spirit::x3::ascii::space);
+  auto const right_symbols = symbols_map.size() - left_symbols;
   return {{create_cospan_morphism(domain), create_cospan_morphism(codomain)}};
 }
 

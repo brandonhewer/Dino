@@ -10,7 +10,7 @@ namespace Naturality {
 
 struct CospanSubstitutions {
   std::vector<std::optional<CospanMorphism::Type>> values;
-  std::size_t maximum;
+  std::vector<std::size_t> maximum;
 };
 
 using VariableSubstitution = std::vector<CospanSubstitutions>;
@@ -21,7 +21,13 @@ CospanMorphism cospan_substitution(
     CospanMorphism const &, Types::TypeConstructor const &);
 
 VariableSubstitution create_empty_substitution(CospanStructure const &,
-                                               NaturalTransformation const &);
+                                               NaturalTransformation const &,
+                                               std::size_t);
+
+VariableSubstitution
+create_empty_substitution(CospanStructure const &,
+                          NaturalTransformation const &,
+                          std::vector<std::size_t> const &);
 
 } // namespace Naturality
 } // namespace Project

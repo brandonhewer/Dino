@@ -23,7 +23,7 @@ Napi::Object init_all(Napi::Env env, Napi::Object exports) {
   exports.Set(Napi::String::New(env, "NaturalTransformation"),
               NodeNaturalTransformation::initialize(env));
 
-  exports.Set(Napi::String::New(env, "create_transformation"),
+  exports.Set(Napi::String::New(env, "createTransformation"),
               Napi::Function::New(env, create_natural_transformation));
 
   return exports;

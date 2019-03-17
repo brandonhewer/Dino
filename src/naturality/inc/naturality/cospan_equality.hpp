@@ -6,6 +6,8 @@
 namespace Project {
 namespace Naturality {
 
+CospanMorphism &get_nested(CospanMorphism &);
+
 CospanMorphism const &get_nested(CospanMorphism const &);
 
 std::size_t const *get_identifier(CospanMorphism const &);

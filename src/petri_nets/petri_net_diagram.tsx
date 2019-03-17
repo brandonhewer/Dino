@@ -18,6 +18,7 @@ interface IPetriNetProps {
   readonly deadColour: string;
   readonly placeSize: number;
   readonly transitionSize: number;
+  readonly setSVGReference: (x: SVGSVGElement) => void;
 }
 
 function all(xs: boolean[]): boolean {
@@ -31,9 +32,7 @@ function createSimulation(nodes: INode[], edges: IEdges, centre: [number, number
   );
 
   const simulation: any = d3.forceSimulation()
-    .force('link', d3.forceLink().distance(
-      (d: IEdge) => d.distance * 30,
-    ))
+    .force('link', d3.forceLink().distance((d: IEdge) => d.distance * 30))
     .force('charge', d3.forceManyBody().strength(-300))
     .force('center', d3.forceCenter(...centre))
     .nodes(nodes);
@@ -48,6 +47,7 @@ interface IPetriNetDiagramProps {
 }
 
 export class PetriNetDiagram extends Component<IPetriNetProps, IPetriNetDiagramProps> {
+  private ref: SVGSVGElement;
 
   public static getDerivedStateFromProps(nextProps, prevState) {
     const nodes = nextProps.graphData.transitions.concat(...nextProps.graphData.nodes);
@@ -71,16 +71,23 @@ export class PetriNetDiagram extends Component<IPetriNetProps, IPetriNetDiagramP
   }
 
   public componentDidMount(): void {
+    this.props.setSVGReference(this.ref);
     this.runSimulation(this.state.simulation);
   }
 
   public componentDidUpdate(): void {
+    this.props.setSVGReference(this.ref);
     this.runSimulation(this.state.simulation);
   }
 
   public render(): JSX.Element {
     return (
-      <svg className="petrinet" height={this.props.height} width={this.props.width}>
+      <svg 
+        ref={(r) => this.ref = r} 
+        className="petrinet" 
+        height={this.props.height} 
+        width={this.props.width}
+      >
         <defs>
           <marker
             id="arrow"
@@ -128,7 +135,7 @@ export class PetriNetDiagram extends Component<IPetriNetProps, IPetriNetDiagramP
       edge.target.id === node.id
     ));
 
-    if (incoming.length > 0) {
+    if (all(incoming.map((edge: any) => edge.source.count > 0))) {
       const outgoing = edges.outgoing.filter((edge: any) => (
         edge.source.id === node.id
       ));
@@ -152,14 +159,16 @@ export class PetriNetDiagram extends Component<IPetriNetProps, IPetriNetDiagramP
   }
 
   private runSimulation(simulation: any): void {
-    const nodes = d3.select('.places').selectAll('.nodes');
+    const context = d3.select(this.ref);
+
+    const nodes = context.select('.places').selectAll('.nodes');
     const place = nodes.selectAll('circle.node');
     const text = nodes.selectAll('text');
 
-    const transition = d3.select('.transitions').selectAll('rect.node');
+    const transition = context.select('.transitions').selectAll('rect.node');
     const offset = this.props.transitionSize / 2;
 
-    const edges = d3.select('.edges');
+    const edges = context.select('.edges');
     const edge = edges.selectAll('polyline.link');
     const invisibleEdge = edges.selectAll('line.link');
 

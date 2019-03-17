@@ -51,12 +51,13 @@ get_unify_result(TypeConstructor const &left, TypeConstructor const &right,
   if (!is_equal(left, right))
     return ::testing::AssertionFailure()
            << "Unified-Left is not equal to Unified-Right: "
-           << to_string(left, symbols) << " != " << to_string(right, symbols);
+           << to_string(left, symbols, {})
+           << " != " << to_string(right, symbols, {});
   else if (!is_equal(left, expected))
     return ::testing::AssertionFailure()
            << "Unification did not produce expected result: "
-           << to_string(left, symbols)
-           << " != " << to_string(expected, symbols);
+           << to_string(left, symbols, {})
+           << " != " << to_string(expected, symbols, {});
   return ::testing::AssertionSuccess();
 }
 
@@ -66,21 +67,23 @@ test_unify_result(TypeConstructor const &left, TypeConstructor const &right,
                   std::vector<std::string> right_symbols,
                   TypeConstructor const &expected) {
   auto const unification = calculate_unification(
-      left, right, left_symbols.size(), right_symbols.size());
+      left, right, left_symbols.size(), right_symbols.size(), 0, 0);
 
   if (!unification.has_value())
     return ::testing::AssertionFailure()
-           << "Unification failed: " << to_string(left, left_symbols) << " ~ "
-           << to_string(right, right_symbols);
+           << "Unification failed: " << to_string(left, left_symbols, {})
+           << " ~ " << to_string(right, right_symbols, {});
 
-  auto const left_substituted = apply_substitution(left, unification->left);
-  auto const right_substituted = apply_substitution(right, unification->right);
+  auto const left_substituted =
+      apply_substitution(left, unification->left, unification->functor_left);
+  auto const right_substituted =
+      apply_substitution(right, unification->right, unification->functor_right);
   auto const combined_symbols = combine_symbols(left_symbols, right_symbols);
   return get_unify_result(left_substituted, right_substituted, combined_symbols,
                           expected);
 }
 
-} // namespaces
+} // namespace
 
 UnificationTest::UnificationTest() {}
 

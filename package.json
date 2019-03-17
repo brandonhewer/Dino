@@ -9,7 +9,8 @@
     "lint": "./node_modules/.bin/tslint -c tslint.json './src/**/*.{ts,tsx}'",
     "lint-fix": "./node_modules/.bin/tslint -c tslint.json --fix './src/**/*.{ts,tsx}'",
     "install": "cmake-js compile",
-    "build-all": "npm run install && npm run build && npm run less-build && npm run lint-fix",
+    "build-all": "npm run install && npm run build && npm run less-build",
+    "build-fix": "npm run install && npm run build && npm run less-build && npm run lint-fix",
     "test-parsers": "./build/src/type_parsers/test/TypeParsersTest",
     "test-types": "./build/src/polymorphic_types/test/PolymorphicTypesTest",
     "test-naturality": "./build/src/naturality/test/NaturalityTest",
@@ -22,9 +23,11 @@
     "d3-force": "^2.0.0",
     "d3-path": "^1.0.7",
     "electron": "^3.0.13",
+    "mousetrap": "^1.6.3",
     "node-addon-api": "^1.6.2",
     "react": "^16.7.0",
-    "react-dom": "^16.7.0"
+    "react-dom": "^16.7.0",
+    "svg2png": "^4.1.1"
   },
   "devDependencies": {
     "@babel/cli": "^7.2.0",

@@ -10,6 +10,8 @@ std::string to_string(CospanMorphism::Type const &type);
 std::string to_string(CospanMorphism const &morphism);
 std::string to_string(CospanStructure const &structure);
 
+std::string debug_string(CospanStructure const &structure);
+
 } // namespace Naturality
 } // namespace Project
 

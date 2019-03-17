@@ -1,9 +1,11 @@
 #include "naturality/natural_transformation_node.hpp"
+#include "naturality/cospan_composition.hpp"
 #include "naturality/cospan_to_string.hpp"
 #include "naturality/graph_builder.hpp"
 #include "naturality/natural_composition.hpp"
-#include "naturality/natural_transformers.hpp"
+#include "naturality/unify_cospan_with_type.hpp"
 #include "polymorphic_types/type_to_string.hpp"
+#include "polymorphic_types/unification.hpp"
 #include "type_parsers/cospan_parser.hpp"
 #include "type_parsers/transformation_parser.hpp"
 
@@ -11,6 +13,8 @@
 #include <functional>
 #include <numeric>
 #include <unordered_map>
+
+#include <iostream>
 
 namespace {
 
@@ -39,38 +43,8 @@ std::string variance_to_string(Variance variance) {
   }
 }
 
-struct CompatibilityErrorToString {
-
-  std::string operator()(std::vector<std::string> const &symbols,
-                         StructureError const &error) const {
-    return "invalid structure: " + to_string(error.cospan_type) +
-           " is incompatible with " + to_string(error.type, symbols);
-  }
-
-  std::string operator()(std::vector<std::string> const &symbols,
-                         VarianceError const &error) const {
-    return "invalid variance: " +
-           variance_to_string(error.cospan_type.variance) + " of " +
-           to_string(error.cospan_type.type) + " is incompatible with the " +
-           variance_to_string(error.type.variance) + " of " +
-           to_string(error.type.type, symbols);
-  }
-
-} _compatibility_error_to_string;
-
-std::string
-compatibility_error_to_string(CompatibilityError const &error,
-                              std::vector<std::string> const &symbols) {
-  return std::visit(std::bind(_compatibility_error_to_string,
-                              std::cref(symbols), std::placeholders::_1),
-                    error);
-}
-
-Napi::Value
-throw_invalid_cospan_structure(Napi::Env env, CompatibilityError const &error,
-                               std::vector<std::string> const &symbols) {
-  Napi::TypeError::New(env, "invalid cospan specified: " +
-                                compatibility_error_to_string(error, symbols))
+Napi::Value throw_invalid_cospan_structure(Napi::Env env) {
+  Napi::TypeError::New(env, "invalid cospan specified")
       .ThrowAsJavaScriptException();
   return env.Null();
 }
@@ -101,6 +75,30 @@ Napi::Value throw_invalid_argument_type_to_compose(Napi::Env env) {
   return env.Null();
 }
 
+Napi::Value throw_failed_to_compose_types(Napi::Env env) {
+  Napi::TypeError::New(env, "failed to compose types")
+      .ThrowAsJavaScriptException();
+  return env.Null();
+}
+
+Napi::Value throw_failed_to_compose_cospans(Napi::Env env) {
+  Napi::TypeError::New(env, "failed to compose cospan types")
+      .ThrowAsJavaScriptException();
+  return env.Null();
+}
+
+Napi::Value throw_no_arguments_to_variable(Napi::Env env) {
+  Napi::TypeError::New(env, "variable expects 1 argument, 0 received")
+      .ThrowAsJavaScriptException();
+  return env.Null();
+}
+
+Napi::Value throw_invalid_argument_to_variable(Napi::Env env) {
+  Napi::TypeError::New(env, "invalid argument passed to variable")
+      .ThrowAsJavaScriptException();
+  return env.Null();
+}
+
 NaturalTransformation create_transformation(Napi::Value const &transform) {
   if (transform.IsString())
     return parse_transformation(transform.ToString().Utf8Value());
@@ -117,7 +115,7 @@ NaturalTransformation create_transformation(Napi::Value const &domain_value,
 
 NaturalTransformation create_transformation(Napi::CallbackInfo const &info) {
   if (info.Length() == 0)
-    return NaturalTransformation{};
+    return NaturalTransformation{{{}, {}}, {}};
   else if (info.Length() == 1)
     return create_transformation(info[0]);
   return create_transformation(info[0], info[1]);
@@ -177,6 +175,15 @@ NodeNaturalTransformation *get_transformation(Napi::Value value) {
   return get_transformation(value.As<Napi::Object>());
 }
 
+std::optional<Unification>
+calculate_unification(NaturalTransformation const &left,
+                      NaturalTransformation const &right) {
+  return calculate_unification(left.domains.back(), right.domains.front(),
+                               left.symbols.size(), right.symbols.size(),
+                               left.functor_symbols.size(),
+                               right.functor_symbols.size());
+}
+
 } // namespace
 
 namespace Project {
@@ -189,7 +196,8 @@ NodeNaturalTransformation::NodeNaturalTransformation(
     : Napi::ObjectWrap<NodeNaturalTransformation>(info),
       m_transformation(create_transformation(info)),
       m_type(create_default_cospan(m_transformation.domains[0],
-                                   m_transformation.domains[1])) {}
+                                   m_transformation.domains[1])),
+      m_cospan_value_count(m_transformation.symbols.size(), 1) {}
 
 Napi::Function NodeNaturalTransformation::initialize(Napi::Env env) {
   Napi::HandleScope scope(env);
@@ -198,10 +206,11 @@ Napi::Function NodeNaturalTransformation::initialize(Napi::Env env) {
       env, "NaturalTransformation",
       {InstanceMethod("graph", &NodeNaturalTransformation::graph),
        InstanceMethod("string", &NodeNaturalTransformation::string),
-       InstanceMethod("cospan_string",
+       InstanceMethod("cospanString",
                       &NodeNaturalTransformation::cospan_string),
-       InstanceMethod("set_cospan", &NodeNaturalTransformation::set_cospan),
-       InstanceMethod("compose", &NodeNaturalTransformation::compose)});
+       InstanceMethod("setCospan", &NodeNaturalTransformation::set_cospan),
+       InstanceMethod("compose", &NodeNaturalTransformation::compose),
+       InstanceMethod("variable", &NodeNaturalTransformation::variable)});
 
   g_constructor = Napi::Persistent(func);
   g_constructor.SuppressDestruct();
@@ -224,7 +233,8 @@ Napi::Value NodeNaturalTransformation::graph(Napi::CallbackInfo const &info) {
 
   try {
     auto const type = get_type(info[0], m_transformation.symbols);
-    return generate_graph(m_transformation.domains, m_type, type, env);
+    return generate_graph(m_transformation.domains, m_type,
+                          m_cospan_value_count[type], type, env);
   } catch (std::runtime_error &err) {
     return throw_failed_to_generate_graph(err.what(), info.Env());
   }
@@ -242,9 +252,12 @@ NodeNaturalTransformation::set_cospan(Napi::CallbackInfo const &info) {
     return throw_cospan_parse_error(info.Env());
   }
 
-  if (auto error = is_incompatible(m_transformation, cospan))
-    return throw_invalid_cospan_structure(info.Env(), *error,
-                                          m_transformation.symbols);
+  try {
+    m_cospan_value_count = unify_cospan_with_type(m_transformation, cospan);
+  } catch (std::runtime_error &ex) {
+    return throw_invalid_cospan_structure(info.Env());
+  }
+
   m_type = std::move(cospan);
   return info.This();
 }
@@ -272,9 +285,41 @@ Napi::Value NodeNaturalTransformation::compose(Napi::CallbackInfo const &info) {
   auto const *right = get_transformation(info[0]);
   auto composite_object = g_constructor.New({});
   auto *composite = get_transformation(composite_object);
-  composite->m_transformation =
-      compose_transformations(m_transformation, right->m_transformation);
+
+  if (!right)
+    return throw_invalid_argument_type_to_compose(env);
+
+  auto unification =
+      calculate_unification(m_transformation, right->m_transformation);
+
+  if (!unification)
+    return throw_failed_to_compose_types(env);
+
+  composite->m_transformation = compose_transformations(
+      m_transformation, right->m_transformation, *unification);
+
+  auto composition = compose_cospans(
+      m_type, right->m_type, m_transformation, right->m_transformation,
+      *unification, composite->m_transformation.symbols.size());
+  composite->m_type = std::move(composition.cospan);
+  composite->m_cospan_value_count = std::move(composition.value_count);
   return composite_object;
+}
+
+Napi::Value
+NodeNaturalTransformation::variable(Napi::CallbackInfo const &info) {
+  Napi::Env env = info.Env();
+  Napi::EscapableHandleScope scope(env);
+
+  if (info.Length() == 0)
+    return throw_no_arguments_to_variable(env);
+
+  auto const value = info[0];
+  if (!value.IsNumber())
+    return throw_invalid_argument_to_variable(env);
+
+  auto const &symbol = m_transformation.symbols[value.ToNumber().Uint32Value()];
+  return Napi::String::New(env, symbol);
 }
 
 } // namespace Naturality

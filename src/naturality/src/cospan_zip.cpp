@@ -1,6 +1,8 @@
 #include "naturality/cospan_zip.hpp"
 #include "naturality/cospan_equality.hpp"
 
+#include "naturality/cospan_to_string.hpp"
+
 namespace {
 
 using namespace Project::Naturality;
@@ -13,7 +15,7 @@ struct ZipCospanTypes {
 
   CospanMorphism::Type operator()(CospanMorphism const &left,
                                   CospanMorphism const &right) const {
-    return zip_cospan_morphisms(get_nested(left), get_nested(right));
+    return zip_cospan_morphisms(left, right);
   }
 
   CospanMorphism::Type operator()(CospanMorphism const &left,
@@ -68,18 +70,8 @@ struct ZipCospanTypes {
 
 } _zip_cospan_types;
 
-} // namespace
-
-namespace Project {
-namespace Naturality {
-
-CospanMorphism::Type zip_cospan_types(CospanMorphism::Type const &left,
-                                      CospanMorphism::Type const &right) {
-  return std::visit(_zip_cospan_types, left, right);
-}
-
-CospanMorphism zip_cospan_morphisms(CospanMorphism const &left,
-                                    CospanMorphism const &right) {
+CospanMorphism zip_morphisms(CospanMorphism const &left,
+                             CospanMorphism const &right) {
   auto const expected_size = left.map.size();
 
   if (right.map.size() != expected_size)
@@ -95,6 +87,21 @@ CospanMorphism zip_cospan_morphisms(CospanMorphism const &left,
         left_type.variance});
   }
   return std::move(zipped);
+}
+
+} // namespace
+
+namespace Project {
+namespace Naturality {
+
+CospanMorphism::Type zip_cospan_types(CospanMorphism::Type const &left,
+                                      CospanMorphism::Type const &right) {
+  return std::visit(_zip_cospan_types, left, right);
+}
+
+CospanMorphism zip_cospan_morphisms(CospanMorphism const &left,
+                                    CospanMorphism const &right) {
+  return zip_morphisms(get_nested(left), get_nested(right));
 }
 
 } // namespace Naturality

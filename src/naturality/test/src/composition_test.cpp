@@ -71,9 +71,9 @@ TypeConstructor true_function() {
 }
 
 FunctorTypeConstructor application_functor(std::size_t functor) {
-  return {{{general_function(), Variance::COVARIANCE},
-           {0, Variance::COVARIANCE}},
-          functor};
+  return {
+      {{general_function(), Variance::COVARIANCE}, {0, Variance::COVARIANCE}},
+      functor};
 }
 
 FunctorTypeConstructor application_diagonal_functor(std::size_t functor) {
@@ -178,7 +178,9 @@ TEST(CompositionTest, EVAL_Y_TEST) {
   auto const eval = evaluation_map();
   auto const y = y_combinator();
   auto const composite = compose_transformations(y, eval);
-  std::cout << to_string(composite.domains[1], composite.symbols) << "\n";
+  std::cout << to_string(composite.domains[1], composite.symbols,
+                         composite.functor_symbols)
+            << "\n";
   std::cout << to_string(composite) << "\n";
 }
 
@@ -187,7 +189,9 @@ TEST(CompositionTest, EVAL_DIAGONAL_TEST) {
   auto const diag = diagonal();
   auto const composite = compose_transformations(eval, diag);
   std::cout << to_string(eval) << "\n";
-  std::cout << to_string(composite.domains[1], composite.symbols) << "\n";
+  std::cout << to_string(composite.domains[1], composite.symbols,
+                         composite.functor_symbols)
+            << "\n";
   std::cout << to_string(composite) << "\n";
 }
 
@@ -204,7 +208,9 @@ TEST(CompositionTest, Y_TO_TRUE_IDENTITY_TEST) {
   auto const composite = compose_transformations(y, t);
   std::cout << to_string(y) << "\n";
   std::cout << to_string(t) << "\n";
-  std::cout << to_string(composite.domains[1], composite.symbols) << "\n";
+  std::cout << to_string(composite.domains[1], composite.symbols,
+                         composite.functor_symbols)
+            << "\n";
   std::cout << to_string(composite) << "\n";
 }
 
@@ -214,6 +220,8 @@ TEST(CompositionTest, EVAL_TRANS_DIAG_TEST) {
   auto const composite = compose_transformations(diag, eval);
   std::cout << to_string(eval) << "\n";
   std::cout << to_string(diag) << "\n";
-  std::cout << to_string(composite.domains[1], composite.symbols) << "\n";
+  std::cout << to_string(composite.domains[1], composite.symbols,
+                         composite.functor_symbols)
+            << "\n";
   std::cout << to_string(composite) << "\n";
 }

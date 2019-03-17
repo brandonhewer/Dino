@@ -23,11 +23,13 @@ private:
   Napi::Value cospan_string(Napi::CallbackInfo const &);
   Napi::Value set_cospan(Napi::CallbackInfo const &);
   Napi::Value compose(Napi::CallbackInfo const &);
+  Napi::Value variable(Napi::CallbackInfo const &);
 
   static Napi::FunctionReference g_constructor;
 
   NaturalTransformation m_transformation;
   CospanStructure m_type;
+  std::vector<std::size_t> m_cospan_value_count;
 };
 
 } // namespace Naturality

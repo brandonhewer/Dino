@@ -67,7 +67,7 @@ CospanStructure create_default_cospan(Types::TypeConstructor const &domain,
                                       Types::TypeConstructor const &codomain) {
   std::vector<CospanMorphism> domains = {create_default_from(domain),
                                          create_default_from(codomain)};
-  return CospanStructure{std::move(domains), 0, 1};
+  return CospanStructure{std::move(domains), {{0, 1}, {1, 0}}, 0, 1};
 }
 
 } // namespace Naturality

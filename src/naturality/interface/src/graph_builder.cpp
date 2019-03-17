@@ -1,4 +1,9 @@
 #include "naturality/graph_builder.hpp"
+#include "naturality/cospan_equality.hpp"
+#include "polymorphic_types/type_equality.hpp"
+
+#include <iostream>
+#include <naturality/cospan_to_string.hpp>
 
 namespace {
 
@@ -39,6 +44,16 @@ Napi::Object create_type_node(std::size_t identifier, TypeNode const &node,
   return std::move(object);
 }
 
+Napi::Object create_type_node(std::size_t identifier, std::size_t type,
+                              Variance variance, Napi::Env &env) {
+  Napi::Object object = Napi::Object::New(env);
+  object.Set("id", identifier);
+  object.Set("type", type);
+  object.Set("variance", static_cast<std::size_t>(variance));
+  object.Set("count", 0);
+  return std::move(object);
+}
+
 Napi::Object create_transition_node(std::size_t identifier, Napi::Env &env) {
   Napi::Object object = Napi::Object::New(env);
   object.Set("id", identifier);
@@ -46,7 +61,7 @@ Napi::Object create_transition_node(std::size_t identifier, Napi::Env &env) {
 }
 
 Napi::Object create_edge(std::size_t source, std::size_t target,
-                         std::size_t distance, Napi::Env &env) {
+                         double distance, Napi::Env &env) {
   Napi::Object object = Napi::Object::New(env);
   object.Set("source", source);
   object.Set("target", target);
@@ -77,9 +92,9 @@ Variance calculate_variance(Variance variance, Variance environment_variance) {
 void create_edge(GraphData &graph, std::size_t node, TypeNode const &type_node,
                  Variance variance, std::size_t transition, Napi::Env &env) {
   if (is_edge_source(type_node, variance))
-    graph.incoming_edges.emplace_back(create_edge(node, transition, 2, env));
+    graph.incoming_edges.emplace_back(create_edge(node, transition, 2.0, env));
   else
-    graph.outgoing_edges.emplace_back(create_edge(transition, node, 2, env));
+    graph.outgoing_edges.emplace_back(create_edge(transition, node, 2.0, env));
 }
 
 void generate_graph_part(GraphData &, std::size_t, TypeNode const &, Variance,
@@ -96,6 +111,13 @@ void add_graph_node(GraphData &graph, std::size_t part,
   auto &nodes = graph.nodes[part];
   nodes.emplace_back(
       create_type_node(graph.node_count, type_node, variance, env));
+  ++graph.node_count;
+}
+
+void add_graph_node(GraphData &graph, std::size_t part, std::size_t type,
+                    Variance variance, Napi::Env &env) {
+  auto &nodes = graph.nodes[part];
+  nodes.emplace_back(create_type_node(graph.node_count, type, variance, env));
   ++graph.node_count;
 }
 
@@ -117,13 +139,23 @@ void create_graph_part(GraphData &graph, std::size_t part,
 void create_graph_part(GraphData &graph, std::size_t part,
                        TypeNode const &type_node, Variance variance,
                        Napi::Env &env, std::size_t type,
-                       std::pair<std::size_t, std::size_t> const &transitions) {
+                       CospanMorphism::PairType const &transitions) {
   if (type == type_node.type) {
     add_graph_edge(graph, {type, false}, variance, env, transitions.first);
     add_graph_edge(graph, {type, true}, variance, env, transitions.second);
-    add_graph_node(graph, part, type_node, variance, env);
+    add_graph_node(graph, part, type_node.type, variance, env);
   }
 }
+
+template <typename T>
+void generate_graph_part_with(GraphData &, std::size_t, TypeNode const &,
+                              Variance, Napi::Env &,
+                              TypeConstructor::Type const &, T const &);
+
+template <typename T>
+void generate_graph_part_with(GraphData &, std::size_t, TypeNode const &,
+                              Variance, Napi::Env &, T const &,
+                              CospanMorphism::Type const &);
 
 struct GenerateGraphPart {
 
@@ -135,7 +167,7 @@ struct GenerateGraphPart {
 
   void operator()(GraphData &graph, std::size_t part, TypeNode const &type_node,
                   Variance variance, Napi::Env &env, std::size_t type,
-                  std::pair<std::size_t, std::size_t> const &transitions) {
+                  CospanMorphism::PairType const &transitions) const {
     create_graph_part(graph, part, type_node, variance, env, type, transitions);
   }
 
@@ -156,28 +188,71 @@ struct GenerateGraphPart {
   }
 
   template <typename T>
-  void operator()(GraphData &, std::size_t, TypeNode const &, Variance,
-                  Napi::Env &, FunctorTypeConstructor const &,
-                  T const &) const {
-    throw std::runtime_error("cospan type does not match polymorphic type");
+  void operator()(GraphData &graph, std::size_t part, TypeNode const &type_node,
+                  Variance variance, Napi::Env &env,
+                  FunctorTypeConstructor const &functor,
+                  T const &cospan_value) const {
+    if (functor.type.size() == 1)
+      generate_graph_part_with(graph, part, type_node, variance, env,
+                               functor.type[0].type, cospan_value);
+    else
+      throw std::runtime_error(
+          "cospan type does not match polymorphic type: functor found");
   }
 
   template <typename T>
-  void operator()(GraphData &, std::size_t, TypeNode const &, Variance,
-                  Napi::Env &, TypeConstructor const &, T const &) const {
-    throw std::runtime_error("cospan type does not match polymorphic type");
+  void operator()(GraphData &graph, std::size_t part, TypeNode const &type_node,
+                  Variance variance, Napi::Env &env,
+                  TypeConstructor const &type, T const &cospan_value) const {
+    if (type.type.size() == 1)
+      generate_graph_part_with(graph, part, type_node, variance, env,
+                               type.type[0].type, cospan_value);
+    else
+      throw std::runtime_error(
+          "cospan type does not match polymorphic type: constructor found");
   }
 
   template <typename T>
-  void operator()(GraphData &, std::size_t, TypeNode const &, Variance,
-                  Napi::Env &, T const &, CospanMorphism const &) const {
-    throw std::runtime_error("cospan type does not match polymorphic type");
+  void operator()(GraphData &graph, std::size_t part, TypeNode const &type_node,
+                  Variance variance, Napi::Env &env, T const &type,
+                  CospanMorphism const &morphism) const {
+    if (morphism.map.size() == 1)
+      generate_graph_part_with(graph, part, type_node, variance, env, type,
+                               morphism.map[0]);
+    else
+      throw std::runtime_error(
+          "cospan type does not match polymorphic type: morphism found");
   }
 
   template <typename T, typename U>
   void operator()(GraphData &, std::size_t, TypeNode const &, Variance,
-                  Napi::Env &, T const &, U const &) const {}
+                  Napi::Env &, T const &, U const &) const {
+    throw std::runtime_error(
+        "cospan type does not match polymorphic type: unknown");
+  }
 } _generate_graph_part;
+
+template <typename T>
+void generate_graph_part_with(GraphData &graph, std::size_t part,
+                              TypeNode const &type_node, Variance variance,
+                              Napi::Env &env, TypeConstructor::Type const &type,
+                              T const &cospan_value) {
+  std::visit(std::bind(_generate_graph_part, std::ref(graph), part,
+                       std::cref(type_node), variance, std::ref(env),
+                       std::placeholders::_1, std::cref(cospan_value)),
+             type);
+}
+
+template <typename T>
+void generate_graph_part_with(GraphData &graph, std::size_t part,
+                              TypeNode const &type_node, Variance variance,
+                              Napi::Env &env, T const &type,
+                              CospanMorphism::Type const &cospan_value) {
+  std::visit(std::bind(_generate_graph_part, std::ref(graph), part,
+                       std::cref(type_node), variance, std::ref(env),
+                       std::cref(type), std::placeholders::_1),
+             cospan_value);
+}
 
 template <typename F>
 void generate_graph_part(F const &create_graph_part, Variance variance,
@@ -197,9 +272,6 @@ void generate_graph_part(GraphData &graph, std::size_t part,
                          Napi::Env &env,
                          TypeConstructor::ConstructorType const &types,
                          CospanMorphism const &morphism) {
-  if (morphism.map.size() != types.size())
-    throw std::runtime_error("cospan type does not match polymorphic type");
-
   auto const create_graph_part =
       std::bind(_generate_graph_part, std::ref(graph), part,
                 std::cref(type_node), std::placeholders::_1, std::ref(env),
@@ -213,25 +285,91 @@ void generate_graph_part(GraphData &graph, std::size_t part,
                          TypeNode const &type_node, Variance variance,
                          Napi::Env &env, FunctorTypeConstructor const &functor,
                          CospanMorphism const &morphism) {
-  return generate_graph_part(graph, part, type_node, variance, env,
-                             functor.type, morphism);
+  auto const &nested_morphism = get_nested(morphism);
+
+  if (nested_morphism.map.size() == functor.type.size())
+    generate_graph_part(graph, part, type_node, variance, env, functor.type,
+                        nested_morphism);
+  else if (nested_morphism.map.size() == 1)
+    generate_graph_part_with(graph, part, type_node, variance, env, functor,
+                             nested_morphism.map[0]);
+  else if (functor.type.size() == 1)
+    generate_graph_part_with(graph, part, type_node, variance, env,
+                             functor.type[0].type, nested_morphism);
+  else
+    throw std::runtime_error("cospan type does not match polymorphic type");
 }
 
 void generate_graph_part(GraphData &graph, std::size_t part,
                          TypeNode const &type_node, Variance variance,
                          Napi::Env &env, TypeConstructor const &constructor,
                          CospanMorphism const &morphism) {
-  return generate_graph_part(graph, part, type_node, variance, env,
-                             constructor.type, morphism);
+  auto const &nested_constructor = get_nested(constructor);
+  auto const &nested_morphism = get_nested(morphism);
+
+  if (nested_morphism.map.size() == nested_constructor.type.size())
+    generate_graph_part(graph, part, type_node, variance, env,
+                        nested_constructor.type, nested_morphism);
+  else if (nested_morphism.map.size() == 1)
+    generate_graph_part_with(graph, part, type_node, variance, env,
+                             nested_constructor, nested_morphism.map[0]);
+  else if (nested_constructor.type.size() == 1)
+    generate_graph_part_with(graph, part, type_node, variance, env,
+                             nested_constructor.type[0].type, nested_morphism);
+  else
+    throw std::runtime_error("cospan type does not match polymorphic type");
 }
 
-std::vector<Napi::Object> generate_invisible_edges(std::size_t transitions,
-                                                   Napi::Env &env) {
-  std::vector<Napi::Object> edges;
-  edges.reserve(transitions - 1);
+void add_invisible_edges(std::vector<Napi::Object> &edges, std::size_t from,
+                         std::size_t to, Napi::Env &env) {
+  if (0 == to || from == to)
+    return;
 
-  for (auto i = 0u; i < transitions - 1; ++i)
-    edges.emplace_back(create_edge(i, i + 1, 1, env));
+  edges.reserve(edges.size() + (to - from));
+  for (auto i = from; i < to - 1; ++i)
+    edges.emplace_back(create_edge(i, i + 1, 0.5, env));
+}
+
+void add_invisible_edges(std::vector<Napi::Object> &edges,
+                         std::vector<Napi::Object> const &nodes,
+                         std::size_t &start, Napi::Env &env) {
+  for (auto i = 0u; i < nodes.size() - 1; ++i) {
+    edges.emplace_back(create_edge(start, start + 1, 1.0, env));
+    start += 1;
+  }
+  start += 1;
+}
+
+void add_invisible_edges(std::vector<Napi::Object> &edges,
+                         std::vector<std::vector<Napi::Object>> const &nodes,
+                         std::size_t start, Napi::Env &env) {
+  for (auto &&node_group : nodes) {
+    if (node_group.size() > 0)
+      add_invisible_edges(edges, node_group, start, env);
+  }
+}
+
+std::vector<Napi::Object> generate_invisible_edges(
+    std::size_t transitions,
+    std::vector<std::pair<std::size_t, std::size_t>> const &shared_count,
+    Napi::Env &env) {
+  std::vector<Napi::Object> edges;
+  auto const edge_sets = shared_count.size() - 1;
+  std::size_t current = 0;
+
+  for (auto i = 0u; i < edge_sets; ++i) {
+    auto const shared = shared_count[i].second;
+    auto const maximum = shared + current;
+
+    if (transitions > maximum)
+      add_invisible_edges(edges, current, maximum, env);
+    else {
+      add_invisible_edges(edges, current, transitions, env);
+      return std::move(edges);
+    }
+
+    current = maximum;
+  }
   return std::move(edges);
 }
 
@@ -305,19 +443,21 @@ namespace Project {
 namespace Naturality {
 
 Napi::Value generate_graph(std::vector<TypeConstructor> const &domains,
-                           CospanStructure const &cospan, std::size_t type,
+                           CospanStructure const &cospan,
+                           std::size_t transitions, std::size_t type,
                            Napi::Env &env) {
   GraphData graph;
   graph.nodes = std::vector<std::vector<Napi::Object>>(
       domains.size(), std::vector<Napi::Object>());
 
   Napi::EscapableHandleScope scope(env);
-  graph.transition_ids = cospan.number_of_identifiers;
-  graph.node_count = graph.transition_ids;
-  graph.invisible_edges = generate_invisible_edges(graph.transition_ids, env);
-  graph.transitions = generate_transitions(graph.transition_ids, env);
+  graph.node_count = transitions;
+  graph.invisible_edges =
+      generate_invisible_edges(transitions, cospan.shared_counts, env);
+  graph.transitions = generate_transitions(transitions, env);
 
   generate_graph_parts(graph, domains, cospan, type, env);
+  add_invisible_edges(graph.invisible_edges, graph.nodes, transitions, env);
 
   return create_graph(graph, env, scope);
 }

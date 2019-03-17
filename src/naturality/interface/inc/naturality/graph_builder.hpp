@@ -10,7 +10,8 @@ namespace Project {
 namespace Naturality {
 
 Napi::Value generate_graph(std::vector<Types::TypeConstructor> const &,
-                           CospanStructure const &, std::size_t, Napi::Env &);
+                           CospanStructure const &, std::size_t, std::size_t,
+                           Napi::Env &);
 }
 } // namespace Project
 

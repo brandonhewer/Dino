@@ -1,9 +1,9 @@
 import { Component } from 'react';
-import { IPetriNet, PetriNetDiagram } from './petri_net_diagram';
-import { PetriTypeForm } from './petri_type_form';
 import { Selection } from './selection';
+import { CompositePetriForm } from './composite_petri_form';
+import { IPetriNet, PetriNetDiagram } from './petri_net_diagram';
 
-interface IPetriTypeComponentProps {
+interface ICompositePetriComponentProps {
   readonly width: number;
   readonly height: number;
   readonly liveColour: string;
@@ -11,30 +11,24 @@ interface IPetriTypeComponentProps {
   readonly placeSize: number;
   readonly transitionSize: number;
   readonly selected: Selection;
-  readonly cospan: string;
   readonly variable: string;
   readonly graph: IPetriNet;
   readonly transform: string;
-  readonly setCospan: (x: string) => any;
-  readonly setTransform: (x:string) => any;
   readonly setVariable: (x: string) => any;
   readonly setSVGReference: (x: SVGSVGElement) => void;
 }
 
-export class PetriTypeComponent extends Component<IPetriTypeComponentProps, {}> {
+export class CompositePetriComponent extends Component<ICompositePetriComponentProps, {}> {
 
   public render(): JSX.Element {
     return (
       <div className='petrinet'>
-        <PetriTypeForm
+        <CompositePetriForm
           height={this.props.height * 0.4}
           width={this.props.width}
-          cospan={this.props.cospan}
           variable={this.props.variable}
           transform={this.props.transform}
           selected={this.props.selected}
-          setCospan={this.props.setCospan}
-          setTransformation={this.props.setTransform}
           setVariable={this.props.setVariable}
         />
         <PetriNetDiagram

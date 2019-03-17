@@ -8,12 +8,17 @@
 namespace Project {
 namespace Naturality {
 
-CospanStructure compose_cospans(CospanStructure const &,
-                                CospanStructure const &,
-                                NaturalTransformation const &,
-                                NaturalTransformation const &,
-                                Types::Unification const &);
-}
+struct CompositionResult {
+  CospanStructure cospan;
+  std::vector<std::size_t> value_count;
+};
+
+CompositionResult compose_cospans(CospanStructure const &,
+                                  CospanStructure const &,
+                                  NaturalTransformation const &,
+                                  NaturalTransformation const &,
+                                  Types::Unification const &, std::size_t);
+} // namespace Naturality
 } // namespace Project
 
 #endif

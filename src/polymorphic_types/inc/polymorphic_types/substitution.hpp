@@ -11,9 +11,11 @@ namespace Project {
 namespace Types {
 
 using Substitution = std::vector<std::optional<TypeConstructor::Type>>;
+using FunctorSubstitution = std::vector<std::optional<std::size_t>>;
 
 TypeConstructor apply_substitution(TypeConstructor const &,
-                                   Substitution const &);
+                                   Substitution const &,
+                                   FunctorSubstitution const &);
 
 } // namespace Types
 } // namespace Project

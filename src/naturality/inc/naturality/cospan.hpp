@@ -23,8 +23,9 @@ struct CospanMorphism {
 
 struct CospanStructure {
   std::vector<CospanMorphism> domains;
+  std::vector<std::pair<std::size_t, std::size_t>> shared_counts;
   std::size_t start_identifier;
-  std::size_t number_of_identifiers;
+  std::size_t total_number_of_identifiers;
 };
 
 CospanStructure create_default_cospan(Types::TypeConstructor const &,

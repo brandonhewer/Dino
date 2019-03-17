@@ -4,6 +4,12 @@ namespace {
 
 using namespace Project::Naturality;
 
+template <typename T> T *extract_type(CospanMorphism &type) {
+  if (type.map.size() != 1)
+    return nullptr;
+  return std::get_if<T>(&type.map[0].type);
+}
+
 template <typename T> T const *extract_type(CospanMorphism const &type) {
   if (type.map.size() != 1)
     return nullptr;
@@ -11,6 +17,13 @@ template <typename T> T const *extract_type(CospanMorphism const &type) {
 }
 
 CospanMorphism const &extract_nested(CospanMorphism const &morphism) {
+  auto nested = &morphism;
+  while (auto next = extract_type<CospanMorphism>(*nested))
+    nested = next;
+  return *nested;
+}
+
+CospanMorphism &extract_nested(CospanMorphism &morphism) {
   auto nested = &morphism;
   while (auto next = extract_type<CospanMorphism>(*nested))
     nested = next;
@@ -125,6 +138,10 @@ bool is_equal_types(CospanMorphism::Type const &left,
 
 namespace Project {
 namespace Naturality {
+
+CospanMorphism &get_nested(CospanMorphism &morphism) {
+  return extract_nested(morphism);
+}
 
 CospanMorphism const &get_nested(CospanMorphism const &morphism) {
   return extract_nested(morphism);

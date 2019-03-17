@@ -19,40 +19,38 @@ bool unify_identifier(
   return true;
 }
 
+bool unify_functor_identifier(
+    std::vector<std::optional<std::size_t>> &unification,
+    FunctorTypeConstructor const &functor, std::size_t unifier) {
+  auto const &identifier = unification[functor.identifier];
+  if (identifier)
+    return identifier == unifier;
+  unification[functor.identifier] = unifier;
+  return true;
+}
+
 bool unify_functor(Unification &unification, FunctorTypeConstructor const &left,
                    FunctorTypeConstructor const &right) {
-  if (!compute_unification(left.type, right.type, unification))
-    return false;
-  return unify_identifier(unification.left, left.identifier, right.identifier);
+  return unify_functor_identifier(unification.functor_left, left,
+                                  right.identifier) &&
+         compute_unification(left.type, right.type, unification);
 }
 
 bool unify_functor(Unification &unification,
                    FunctorTypeConstructor const &functor,
                    TypeConstructor const &constructor) {
-  auto const &nested = get_nested(constructor);
-
-  if (auto const &current = unification.left[functor.identifier])
-    return is_equal(*current, nested);
-
-  if (!compute_unification(functor.type, nested.type, unification))
-    return false;
-
-  unification.left[functor.identifier] = nested;
-  return true;
+  return unify_functor_identifier(unification.functor_left, functor,
+                                  unification.functor_right.size()) &&
+         compute_unification(functor.type, get_nested(constructor).type,
+                             unification);
 }
 
 bool unify_functor(Unification &unification, TypeConstructor const &constructor,
                    FunctorTypeConstructor const &functor) {
-  auto const &nested = get_nested(constructor);
-
-  if (auto const &current = unification.right[functor.identifier])
-    return is_equal(*current, nested);
-
-  if (!compute_unification(nested.type, functor.type, unification))
-    return false;
-
-  unification.right[functor.identifier] = nested;
-  return true;
+  return unify_functor_identifier(unification.functor_right, functor,
+                                  unification.functor_right.size()) &&
+         compute_unification(get_nested(constructor).type, functor.type,
+                             unification);
 }
 
 bool unify_constructors(Unification &unification, TypeConstructor const &left,
@@ -197,14 +195,19 @@ bool compute_unification(TypeConstructor::ConstructorType const &left,
 namespace Project {
 namespace Types {
 
-std::optional<Unification> calculate_unification(TypeConstructor const &left,
-                                                 TypeConstructor const &right,
-                                                 std::size_t left_symbols,
-                                                 std::size_t right_symbols) {
+std::optional<Unification>
+calculate_unification(TypeConstructor const &left, TypeConstructor const &right,
+                      std::size_t left_symbols, std::size_t right_symbols,
+                      std::size_t left_functor_symbols,
+                      std::size_t right_functor_symbols) {
   Unification unification{std::vector<std::optional<TypeConstructor::Type>>(
                               left_symbols, std::nullopt),
                           std::vector<std::optional<TypeConstructor::Type>>(
-                              right_symbols, std::nullopt)};
+                              right_symbols, std::nullopt),
+                          std::vector<std::optional<std::size_t>>(
+                              left_functor_symbols, std::nullopt),
+                          std::vector<std::optional<std::size_t>>(
+                              right_functor_symbols, std::nullopt)};
   return unify_constructors(unification, left, right)
              ? std::move(unification)
              : std::optional<Unification>(std::nullopt);

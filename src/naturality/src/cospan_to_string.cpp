@@ -92,5 +92,15 @@ std::string to_string(CospanStructure const &structure) {
          cospan_morphism_to_string(structure.domains.back());
 }
 
+std::string debug_string(CospanStructure const &structure) {
+  auto const &domains = structure.domains;
+
+  std::string result;
+  for (auto morphism = domains.begin(); morphism < domains.end() - 1;
+       ++morphism)
+    result += cospan_morphism_to_string(*morphism) + " => ";
+  return result + cospan_morphism_to_string(domains.back());
+}
+
 } // namespace Naturality
 } // namespace Project
