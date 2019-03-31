@@ -13,7 +13,9 @@ matrix:
 jobs:
   include:
     - stage: test
-      script: npm run install
+      script: 
+        - npm install -g cmake-js
+        - npm run install
       name: "Install Native Modules"
     - script: npm run test-parsers
       name: "Parser Tests"
@@ -24,6 +26,8 @@ jobs:
     - if: branch = master
       stage: deploy
       before_install: openssl aes-256-cbc -K $encrypted_3858a6b79eca_key -iv $encrypted_3858a6b79eca_iv -in .dropbox_uploader.enc -out ~\/.dropbox_uploader -d
-      script: npm run install
+      script: 
+        - npm install -g cmake-js
+        - npm run install
       name: "Install Native Modules"
     - script: npm run build
