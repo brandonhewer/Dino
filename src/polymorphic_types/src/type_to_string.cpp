@@ -35,6 +35,10 @@ std::string type_to_string(TypeConstructor::Type const &,
                            std::vector<std::string> const &,
                            std::vector<std::string> const &);
 
+std::string outer_to_string(TypeConstructor::Type const &,
+                            std::vector<std::string> const &,
+                            std::vector<std::string> const &);
+
 std::string
 functor_variable_to_string(TypeConstructor::AtomicType const &type,
                            std::vector<std::string> const &symbols,
@@ -75,13 +79,26 @@ std::string
 constructor_to_string(TypeConstructor const &constructor,
                       std::vector<std::string> const &symbols,
                       std::vector<std::string> const &functor_symbols) {
+  if (constructor.type.size() == 1)
+    return outer_to_string(constructor.type[0].type, symbols, functor_symbols);
+  return "(" +
+         constructor_to_string(constructor.type, symbols, functor_symbols) +
+         ")";
+}
+
+std::string
+outer_constructor_to_string(TypeConstructor const &constructor,
+                            std::vector<std::string> const &symbols,
+                            std::vector<std::string> const &functor_symbols) {
+  if (constructor.type.size() == 1)
+    return outer_to_string(constructor.type[0].type, symbols, functor_symbols);
   return constructor_to_string(constructor.type, symbols, functor_symbols);
 }
 
 std::string functor_to_string(FunctorTypeConstructor const &functor,
                               std::vector<std::string> const &symbols,
                               std::vector<std::string> const &functor_symbols) {
-  if (functor.identifier >= symbols.size())
+  if (functor.identifier >= functor_symbols.size())
     return constructor_to_string(functor.type, symbols, functor_symbols);
 
   auto const add_type = [&](auto const &acc, auto const &type) {
@@ -114,23 +131,65 @@ struct TypeToString {
 
   std::string operator()(std::vector<std::string> const &symbols,
                          std::vector<std::string> const &functor_symbols,
+                         TypeConstructor const &constructor) const {
+    return constructor_to_string(constructor, symbols, functor_symbols);
+  }
+
+  std::string operator()(std::vector<std::string> const &symbols,
+                         std::vector<std::string> const &functor_symbols,
                          FunctorTypeConstructor const &functor) const {
-    return functor_to_string(functor, symbols, functor_symbols);
+    return "(" + functor_to_string(functor, symbols, functor_symbols) + ")";
+  }
+
+} _inner_to_string;
+
+struct OuterToString {
+
+  std::string operator()(std::vector<std::string> const &symbols,
+                         std::vector<std::string> const &,
+                         std::size_t identifier) const {
+    return symbols[identifier];
+  }
+
+  std::string operator()(std::vector<std::string> const &,
+                         std::vector<std::string> const &,
+                         FreeType const &) const {
+    return "*";
+  }
+
+  std::string operator()(std::vector<std::string> const &,
+                         std::vector<std::string> const &,
+                         MonoType const &type) const {
+    return mono_type_to_string(type);
   }
 
   std::string operator()(std::vector<std::string> const &symbols,
                          std::vector<std::string> const &functor_symbols,
                          TypeConstructor const &constructor) const {
-    return "(" + constructor_to_string(constructor, symbols, functor_symbols) +
-           ")";
+    return constructor_to_string(constructor, symbols, functor_symbols);
   }
 
-} _type_to_string;
+  std::string operator()(std::vector<std::string> const &symbols,
+                         std::vector<std::string> const &functor_symbols,
+                         FunctorTypeConstructor const &functor) const {
+    return functor_to_string(functor, symbols, functor_symbols);
+  }
+
+} _outer_to_string;
 
 std::string type_to_string(TypeConstructor::Type const &type,
                            std::vector<std::string> const &symbols,
                            std::vector<std::string> const &functor_symbols) {
-  return std::visit(std::bind(_type_to_string, std::cref(symbols),
+  return std::visit(std::bind(_inner_to_string, std::cref(symbols),
+                              std::cref(functor_symbols),
+                              std::placeholders::_1),
+                    type);
+}
+
+std::string outer_to_string(TypeConstructor::Type const &type,
+                            std::vector<std::string> const &symbols,
+                            std::vector<std::string> const &functor_symbols) {
+  return std::visit(std::bind(_outer_to_string, std::cref(symbols),
                               std::cref(functor_symbols),
                               std::placeholders::_1),
                     type);
@@ -144,7 +203,7 @@ namespace Types {
 std::string to_string(TypeConstructor const &constructor,
                       std::vector<std::string> const &symbols,
                       std::vector<std::string> const &functor_symbols) {
-  return constructor_to_string(constructor, symbols, functor_symbols);
+  return outer_constructor_to_string(constructor, symbols, functor_symbols);
 }
 
 std::string to_string(TypeConstructor::Type const &type,

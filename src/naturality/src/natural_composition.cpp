@@ -20,11 +20,6 @@ struct UsedFunctorIdentifiers {
   std::vector<bool> right;
 };
 
-struct AllReplacements {
-  LRReplacements type_replacements;
-  LRReplacements functor_replacements;
-};
-
 void add_shifted_identifiers(TypeReplacements &, std::size_t &,
                              TypeConstructor::Type const &);
 
@@ -101,7 +96,7 @@ void shift_identifiers(Substitution const &substitution,
   shift_used_in_identifiers(used_in, shifted, offset);
 }
 
-LRReplacements calculate_replacements(Unification &unification) {
+LRReplacements calculate_replacements(Unification const &unification) {
   LRReplacements replacements;
   replacements.number = 0;
   replacements.left = TypeReplacements(unification.left.size(), std::nullopt);
@@ -118,11 +113,10 @@ LRReplacements calculate_replacements(Unification &unification) {
 void apply_replacements(
     std::vector<std::optional<TypeConstructor::Type>> &substitutions,
     TypeReplacements const &new_substitutions,
-    TypeReplacements const &replacements,
-    FunctorReplacements const &functor_replacements) {
+    TypeReplacements const &replacements) {
   for (auto i = 0u; i < substitutions.size(); ++i) {
     if (auto substitution = substitutions[i])
-      replace_identifiers(*substitution, replacements, functor_replacements);
+      replace_identifiers(*substitution, replacements);
     else if (auto substitution = new_substitutions[i])
       substitutions[i] = substitution;
   }
@@ -152,40 +146,33 @@ get_used_identifiers(FunctorSubstitution const &left_substitutions,
   return std::move(used_identifiers);
 }
 
-void add_shifted_functor_identifiers(std::vector<bool> const &used_identifiers,
-                                     FunctorReplacements &replacements,
-                                     std::size_t &identifier) {
+void add_shifted_functor_identifiers(
+    std::vector<bool> const &used_identifiers,
+    std::vector<std::optional<std::size_t>> &substitutions,
+    std::size_t &identifier) {
   for (auto i = 0u; i < used_identifiers.size(); ++i) {
     if (used_identifiers[i])
-      replacements[i] = identifier++;
+      substitutions[i] = identifier++;
   }
 }
 
-LRReplacements
-calculate_functor_replacements(UsedFunctorIdentifiers const &used_identifiers) {
-  LRReplacements replacements;
-  replacements.left =
-      FunctorReplacements(used_identifiers.left.size(), std::nullopt);
-  replacements.right =
-      FunctorReplacements(used_identifiers.right.size(), std::nullopt);
-  replacements.number = 0;
-  add_shifted_functor_identifiers(used_identifiers.left, replacements.left,
-                                  replacements.number);
-  add_shifted_functor_identifiers(used_identifiers.right, replacements.right,
-                                  replacements.number);
-  return std::move(replacements);
-}
-
-AllReplacements calculate_applied_replacements(Unification &unification) {
-  auto replacements = calculate_replacements(unification);
+UsedFunctorIdentifiers shift_functor_identifiers(Unification &unification) {
   auto const used_functor =
       get_used_identifiers(unification.functor_left, unification.functor_right);
-  auto functor_replacements = calculate_functor_replacements(used_functor);
-  apply_replacements(unification.left, replacements.left, replacements.right,
-                     functor_replacements.left);
-  apply_replacements(unification.right, replacements.right, replacements.left,
-                     functor_replacements.right);
-  return {std::move(replacements), std::move(functor_replacements)};
+
+  std::size_t count = 0;
+  add_shifted_functor_identifiers(used_functor.left, unification.functor_left,
+                                  count);
+  add_shifted_functor_identifiers(used_functor.right, unification.functor_right,
+                                  count);
+  return std::move(used_functor);
+}
+
+LRReplacements calculate_applied_replacements(Unification &unification) {
+  auto replacements = calculate_replacements(unification);
+  apply_replacements(unification.left, replacements.left, replacements.right);
+  apply_replacements(unification.right, replacements.right, replacements.left);
+  return std::move(replacements);
 }
 
 void add_new_identifiers(std::vector<std::string> &new_identifiers,
@@ -193,6 +180,15 @@ void add_new_identifiers(std::vector<std::string> &new_identifiers,
                          TypeReplacements const &replacements) {
   for (auto i = 0u; i < identifiers.size(); ++i) {
     if (replacements[i].has_value())
+      new_identifiers.emplace_back(identifiers[i]);
+  }
+}
+
+void add_new_identifiers(std::vector<std::string> &new_identifiers,
+                         std::vector<std::string> const &identifiers,
+                         std::vector<bool> const &used) {
+  for (auto i = 0u; i < identifiers.size(); ++i) {
+    if (used[i])
       new_identifiers.emplace_back(identifiers[i]);
   }
 }
@@ -205,6 +201,17 @@ get_new_identifiers(std::vector<std::string> const &left_identifiers,
   identifiers.reserve(replacements.number);
   add_new_identifiers(identifiers, left_identifiers, replacements.left);
   add_new_identifiers(identifiers, right_identifiers, replacements.right);
+  return std::move(identifiers);
+}
+
+std::vector<std::string>
+get_new_identifiers(std::vector<std::string> const &left_identifiers,
+                    std::vector<std::string> const &right_identifiers,
+                    UsedFunctorIdentifiers const &used_functor) {
+  std::vector<std::string> identifiers;
+  identifiers.reserve(used_functor.left.size() + used_functor.right.size());
+  add_new_identifiers(identifiers, left_identifiers, used_functor.left);
+  add_new_identifiers(identifiers, right_identifiers, used_functor.right);
   return std::move(identifiers);
 }
 
@@ -249,6 +256,8 @@ compose_transformations(NaturalTransformation const &left,
                         NaturalTransformation const &right,
                         Types::Unification &unification) {
   auto const replacements = calculate_applied_replacements(unification);
+  auto const used_functor = shift_functor_identifiers(unification);
+
   auto substituted = apply_substitution_to(left.domains, unification.left,
                                            unification.functor_left);
 
@@ -258,11 +267,9 @@ compose_transformations(NaturalTransformation const &left,
                           substituted, unification.right,
                           unification.functor_right);
 
-  auto symbols = get_new_identifiers(left.symbols, right.symbols,
-                                     replacements.type_replacements);
-  auto functor_symbols =
-      get_new_identifiers(left.functor_symbols, right.functor_symbols,
-                          replacements.functor_replacements);
+  auto symbols = get_new_identifiers(left.symbols, right.symbols, replacements);
+  auto functor_symbols = get_new_identifiers(
+      left.functor_symbols, right.functor_symbols, used_functor);
   return NaturalTransformation{std::move(substituted), std::move(symbols),
                                std::move(functor_symbols)};
 }

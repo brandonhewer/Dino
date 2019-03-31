@@ -5,8 +5,6 @@
 #include "polymorphic_types/type_to_string.hpp"
 #include "polymorphic_types/unification.hpp"
 
-#include <iostream>
-
 using namespace Project::Types;
 
 namespace {

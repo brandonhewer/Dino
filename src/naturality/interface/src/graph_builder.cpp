@@ -2,7 +2,6 @@
 #include "naturality/cospan_equality.hpp"
 #include "polymorphic_types/type_equality.hpp"
 
-#include <iostream>
 #include <naturality/cospan_to_string.hpp>
 
 namespace {

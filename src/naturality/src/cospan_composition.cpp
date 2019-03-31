@@ -5,8 +5,6 @@
 #include "naturality/cospan_zip.hpp"
 #include "polymorphic_types/type_equality.hpp"
 
-#include <iostream>
-
 namespace {
 
 using namespace Project::Naturality;

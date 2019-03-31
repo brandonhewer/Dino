@@ -378,6 +378,10 @@ class Worksheet extends Component<IWorksheetProps, IWorksheetState> {
     );
   }
 
+  private getComponent(model: IPetriNetModel, index: number) {
+    return model.composite ? this.getCompositeComponent(model, index) : this.getPetriTypeComponent(model, index);
+  }
+
   render() {
     const { connectDropTarget } = this.props;
     return connectDropTarget(
@@ -389,9 +393,7 @@ class Worksheet extends Component<IWorksheetProps, IWorksheetState> {
         }}
         className='worksheet'
       >
-        {this.state.models.map((model, index) => {
-          return model.composite ? this.getCompositeComponent(model, index) : this.getPetriTypeComponent(model, index);
-        })}
+        {this.state.models.map((model, index) => this.getComponent(model, index))}
       </div>
     );
   }

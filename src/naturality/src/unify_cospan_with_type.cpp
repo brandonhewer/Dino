@@ -6,8 +6,6 @@
 #include <numeric>
 #include <optional>
 
-#include <iostream>
-
 namespace {
 
 using namespace Project::Naturality;

@@ -10,17 +10,13 @@ namespace Project {
 namespace Types {
 
 using TypeReplacements = std::vector<std::optional<std::size_t>>;
-using FunctorReplacements = TypeReplacements;
 
 TypeConstructor::Type &
 replace_identifiers(TypeConstructor::Type &type,
-                    TypeReplacements const &replacements,
-                    FunctorReplacements const &functor_replacements);
+                    TypeReplacements const &replacements);
 
-TypeConstructor &
-replace_identifiers(TypeConstructor &constructor,
-                    TypeReplacements const &replacements,
-                    FunctorReplacements const &functor_replacements);
+TypeConstructor &replace_identifiers(TypeConstructor &constructor,
+                                     TypeReplacements const &replacements);
 
 } // namespace Types
 } // namespace Project

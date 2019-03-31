@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { PureComponent } from 'react';
 import { IPetriNet, PetriNetDiagram } from './petri_net_diagram';
 import { PetriTypeForm } from './petri_type_form';
 import { Selection } from './selection';
@@ -21,11 +21,12 @@ interface IPetriTypeComponentProps {
   readonly setSVGReference: (x: SVGSVGElement) => void;
 }
 
-export class PetriTypeComponent extends Component<IPetriTypeComponentProps, {}> {
+export class PetriTypeComponent extends PureComponent<IPetriTypeComponentProps, {}> {
 
   public render(): JSX.Element {
+    const zIndex = 2 * this.props.selected;
     return (
-      <div className='petrinet'>
+      <div className='petrinet' z-index={zIndex}>
         <PetriTypeForm
           height={this.props.height * 0.4}
           width={this.props.width}
@@ -46,6 +47,7 @@ export class PetriTypeComponent extends Component<IPetriTypeComponentProps, {}> 
           placeSize={18}
           transitionSize={28}
           setSVGReference={this.props.setSVGReference}
+          zIndex={zIndex - 1}
         />
       </div>
     );

@@ -21,8 +21,9 @@ interface ICompositePetriComponentProps {
 export class CompositePetriComponent extends Component<ICompositePetriComponentProps, {}> {
 
   public render(): JSX.Element {
+    const zIndex = 2 * this.props.selected;
     return (
-      <div className='petrinet'>
+      <div className='petrinet' z-index={zIndex}>
         <CompositePetriForm
           height={this.props.height * 0.4}
           width={this.props.width}
@@ -40,6 +41,7 @@ export class CompositePetriComponent extends Component<ICompositePetriComponentP
           placeSize={18}
           transitionSize={28}
           setSVGReference={this.props.setSVGReference}
+          zIndex={zIndex - 1}
         />
       </div>
     );

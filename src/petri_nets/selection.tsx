@@ -1,2 +1,2 @@
 
-export enum Selection { PRIMARY, SECONDARY, NONE }; 
+export enum Selection { NONE, SECONDARY, PRIMARY }; 

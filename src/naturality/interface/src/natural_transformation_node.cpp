@@ -14,8 +14,6 @@
 #include <numeric>
 #include <unordered_map>
 
-#include <iostream>
-
 namespace {
 
 using namespace Project::Naturality;

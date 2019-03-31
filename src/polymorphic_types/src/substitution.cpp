@@ -1,7 +1,5 @@
 #include "polymorphic_types/substitution.hpp"
 
-#include "polymorphic_types/type_to_string.hpp"
-
 namespace {
 
 using namespace Project::Types;

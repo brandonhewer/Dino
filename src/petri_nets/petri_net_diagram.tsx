@@ -18,6 +18,7 @@ interface IPetriNetProps {
   readonly deadColour: string;
   readonly placeSize: number;
   readonly transitionSize: number;
+  readonly zIndex: number;
   readonly setSVGReference: (x: SVGSVGElement) => void;
 }
 
@@ -87,6 +88,7 @@ export class PetriNetDiagram extends Component<IPetriNetProps, IPetriNetDiagramP
         className="petrinet" 
         height={this.props.height} 
         width={this.props.width}
+        z-index={this.props.zIndex}
       >
         <defs>
           <marker
@@ -197,5 +199,13 @@ export class PetriNetDiagram extends Component<IPetriNetProps, IPetriNetDiagramP
         .attr('x', (d: any) => d.x - offset)
         .attr('y', (d: any) => d.y - offset);
     });
+
+    context.call(d3.zoom().on("zoom", () => {
+      nodes.attr("transform", d3.event.transform);
+      transition.attr("transform", d3.event.transform);
+      edge.attr("transform", d3.event.transform);
+      invisibleEdge.attr("transform", d3.event.transform);
+      text.attr("font-size", (12 / d3.event.scale) + "px");
+    }));
   }
 }
