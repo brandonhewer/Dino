@@ -11,7 +11,7 @@ A formal report, detailing the theory and design of Dinode can be found [here](h
 Getting Started with Dinode
 ---------------------------
 
-<kbd>Cmd/Ctrl + N</kbd>         Creates a new Petri net diagram
+<kbd>Command</kbd>         Creates a new Petri net diagram
 
 `Cmd/Ctrl + D`         Deletes the selected diagram
 
