@@ -11,14 +11,14 @@ A formal report, detailing the theory and design of Dinode can be found [here](h
 Getting Started with Dinode
 ---------------------------
 
-<kbd>Command</kbd>         Creates a new Petri net diagram
+<kbd>Command/Ctrl + N</kbd>         >Creates a new Petri net diagram
 
-`Cmd/Ctrl + D`         Deletes the selected diagram
+<kbd>Command/Ctrl + D</kbd>          Deletes the selected diagram
 
-`Shift + Left-Click`   Allows for multi-selection of up to two Petri net diagrams
+<kbd>Shift + Left-Click</kbd>       Allows for multi-selection of up to two Petri net diagrams
 
-`Cmd/Ctrl + .`         Composes Petri nets if two are selected
+<kbd>Command/Ctrl + .</kbd>         Composes Petri nets if two are selected
 
-`Cmd/Ctrl + s`         Saves selected Petri net as an image (svg or png formats)
+<kbd>Command/Ctrl + s</kbd>         Saves selected Petri net as an image (svg or png formats)
 
-`Cmd/Ctrl + e`         Exports selected Petri net as tikzcd code
+<kbd>Command/Ctrl + e</kbd>          Exports selected Petri net as tikzcd code
