@@ -7,9 +7,10 @@ import {
   PetriCompositeComponent, 
   IPetriNet, 
   ItemTypes,
-  Selection, 
+  Selection,
   PetriTypeComponent 
 } from '../petri_nets';
+import { createLatexFrom } from '../latex_exporter';
 import svg2png from 'svg2png';
 
 const bindings = require('bindings');
@@ -42,6 +43,7 @@ interface IWorksheetProps {
   readonly removePetriNetHotKeys: string[];
   readonly composePetriNetHotKeys: string[];
   readonly savePetriNetHotKeys: string[];
+  readonly exportPetriNetHotKeys: string[];
   readonly connectDropTarget?: any;
 };
 
@@ -185,6 +187,7 @@ class Worksheet extends Component<IWorksheetProps, IWorksheetState> {
     MouseTrap.bind(this.props.removePetriNetHotKeys, this.removeComponent.bind(this));
     MouseTrap.bind(this.props.composePetriNetHotKeys, this.composeComponents.bind(this));
     MouseTrap.bind(this.props.savePetriNetHotKeys, this.saveSVGReference.bind(this));
+    MouseTrap.bind(this.props.exportPetriNetHotKeys, this.exportPetriNet.bind(this));
   }
 
   private composeComponents() {
@@ -325,6 +328,12 @@ class Worksheet extends Component<IWorksheetProps, IWorksheetState> {
         }
       });
     }
+  }
+
+  private exportPetriNet() {
+    const tex = createLatexFrom(this.state.models[this.state.primarySelected].graph);
+    const path = remote.dialog.showSaveDialog(null);
+    saveToFile(tex, path.endsWith('.tex') ? path : path + '.tex');
   }
 
   private getPetriTypeComponent(model: IPetriNetModel, index: number) {

@@ -7,7 +7,7 @@ interface INode {
 }
 
 interface ITransitionProps {
-  readonly transitions: INode[];
+  readonly transitions: INode[][];
   readonly width: number;
   readonly height: number;
   readonly simulation: any;
@@ -33,7 +33,7 @@ export class TransitionNodes extends Component<ITransitionProps, {}> {
   private drawNodes(): void {
     const nodes = d3.select(this.ref)
       .selectAll('rect.node')
-      .data(this.props.transitions);
+      .data([].concat(...this.props.transitions));
 
     nodes.call(node_drag(this.props.simulation))
       .on('click', this.props.onClick);

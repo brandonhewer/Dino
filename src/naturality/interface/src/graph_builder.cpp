@@ -16,7 +16,7 @@ struct TypeNode {
 
 struct GraphData {
   std::vector<std::vector<Napi::Object>> nodes;
-  std::vector<Napi::Object> transitions;
+  std::vector<std::vector<Napi::Object>> transitions;
   std::vector<Napi::Object> incoming_edges;
   std::vector<Napi::Object> outgoing_edges;
   std::vector<Napi::Object> invisible_edges;
@@ -372,12 +372,59 @@ std::vector<Napi::Object> generate_invisible_edges(
   return std::move(edges);
 }
 
+std::vector<Napi::Object> generate_invisible_edges(
+    std::vector<std::pair<std::size_t, std::size_t>> const &transitions,
+    Napi::Env &env) {
+  std::vector<Napi::Object> edges;
+  edges.reserve(transitions.back().second - transitions.size());
+  for (auto &&transition : transitions) {
+    for (auto i = transition.first; i < transition.second - 1; ++i)
+      edges.emplace_back(create_edge(i, i + 1, 0.5, env));
+  }
+  return std::move(edges);
+}
+
+std::vector<std::pair<std::size_t, std::size_t>> group_transitions(
+    std::size_t transitions,
+    std::vector<std::pair<std::size_t, std::size_t>> const &shared_count) {
+  std::vector<std::pair<std::size_t, std::size_t>> grouped;
+  grouped.reserve(shared_count.size() - 1);
+
+  std::size_t current_count = 0u;
+  for (auto i = 0u; i < shared_count.size() - 1; ++i) {
+    auto const &count = shared_count[i];
+    grouped.emplace_back(current_count, current_count + count.second);
+    current_count += count.second;
+  }
+  return std::move(grouped);
+}
+
 std::vector<Napi::Object> generate_transitions(std::size_t transitions,
                                                Napi::Env &env) {
   std::vector<Napi::Object> nodes;
   nodes.reserve(transitions);
   for (auto transition = 0u; transition < transitions; ++transition)
     nodes.emplace_back(create_transition_node(transition, env));
+  return std::move(nodes);
+}
+
+std::vector<Napi::Object>
+generate_transitions(std::pair<std::size_t, std::size_t> const &transitions,
+                     Napi::Env &env) {
+  std::vector<Napi::Object> nodes;
+  nodes.reserve(transitions.second - transitions.first);
+  for (auto i = transitions.first; i < transitions.second; ++i)
+    nodes.emplace_back(create_transition_node(i, env));
+  return std::move(nodes);
+}
+
+std::vector<std::vector<Napi::Object>> generate_transitions(
+    std::vector<std::pair<std::size_t, std::size_t>> const &transitions,
+    Napi::Env &env) {
+  std::vector<std::vector<Napi::Object>> nodes;
+  nodes.reserve(transitions.size());
+  for (auto &&transition_group : transitions)
+    nodes.emplace_back(generate_transitions(transition_group, env));
   return std::move(nodes);
 }
 
@@ -451,9 +498,11 @@ Napi::Value generate_graph(std::vector<TypeConstructor> const &domains,
 
   Napi::EscapableHandleScope scope(env);
   graph.node_count = transitions;
-  graph.invisible_edges =
-      generate_invisible_edges(transitions, cospan.shared_counts, env);
-  graph.transitions = generate_transitions(transitions, env);
+
+  auto const &grouped_transitions =
+      group_transitions(transitions, cospan.shared_counts);
+  graph.invisible_edges = generate_invisible_edges(grouped_transitions, env);
+  graph.transitions = generate_transitions(grouped_transitions, env);
 
   generate_graph_parts(graph, domains, cospan, type, env);
   add_invisible_edges(graph.invisible_edges, graph.nodes, transitions, env);

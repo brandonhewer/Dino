@@ -6,7 +6,7 @@ import { TransitionNodes } from './transition_nodes';
 
 export interface IPetriNet {
   readonly nodes: IPlaceNode[][];
-  readonly transitions: INode[];
+  readonly transitions: INode[][];
   readonly edges: IEdges;
 }
 
@@ -51,7 +51,7 @@ export class PetriNetDiagram extends Component<IPetriNetProps, IPetriNetDiagramP
   private ref: SVGSVGElement;
 
   public static getDerivedStateFromProps(nextProps, prevState) {
-    const nodes = nextProps.graphData.transitions.concat(...nextProps.graphData.nodes);
+    const nodes: INode[] = [].concat(...nextProps.graphData.transitions, ...nextProps.graphData.nodes);
     // prevState.simulation.stop();
     return {nodes, simulation: createSimulation(nodes, nextProps.graphData.edges, [
       nextProps.width / 2, nextProps.height / 2,
@@ -61,7 +61,10 @@ export class PetriNetDiagram extends Component<IPetriNetProps, IPetriNetDiagramP
   constructor(props: IPetriNetProps) {
     super(props);
 
-    const nodes = props.graphData.transitions.concat(...props.graphData.nodes);
+    const nodes: INode[] = [].concat(
+      ...props.graphData.transitions, 
+      ...props.graphData.nodes
+    );
 
     this.state = {
       nodes,

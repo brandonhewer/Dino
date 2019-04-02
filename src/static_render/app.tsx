@@ -7,6 +7,7 @@ const addPetriNetHotKeys = ['command+n', 'ctrl+n'];
 const removePetriNetHotKeys = ['del', 'command+d'];
 const composePetriNetHotKeys = ['command+.', 'ctrl+.'];
 const savePetriNetHotKeys = ['command+s', 'ctrl+s'];
+const exportPetriNetHotKeys = ['command+e', 'ctrl+e'];
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
       removePetriNetHotKeys={removePetriNetHotKeys}
       composePetriNetHotKeys={composePetriNetHotKeys}
       savePetriNetHotKeys={savePetriNetHotKeys}
+      exportPetriNetHotKeys={exportPetriNetHotKeys}
     />
   );
 }
