@@ -11,7 +11,8 @@ A formal report, detailing the theory and design of Dinode can be found [here](h
 Getting Started with Dinode
 ---------------------------
 
-`Cmd/Ctrl + N`         Creates a new Petri net diagram\n
+`Cmd/Ctrl + N`         Creates a new Petri net diagram
+
 `Cmd/Ctrl + D`         Deletes the selected diagram
 `Shift + Left-Click`   Allows for multi-selection of up to two Petri net diagrams
 `Cmd/Ctrl + .`         Composes Petri nets if two are selected
