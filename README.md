@@ -14,7 +14,11 @@ Getting Started with Dinode
 `Cmd/Ctrl + N`         Creates a new Petri net diagram
 
 `Cmd/Ctrl + D`         Deletes the selected diagram
+
 `Shift + Left-Click`   Allows for multi-selection of up to two Petri net diagrams
+
 `Cmd/Ctrl + .`         Composes Petri nets if two are selected
+
 `Cmd/Ctrl + s`         Saves selected Petri net as an image (svg or png formats)
+
 `Cmd/Ctrl + e`         Exports selected Petri net as tikzcd code
