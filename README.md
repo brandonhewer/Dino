@@ -19,3 +19,4 @@ Getting Started with Dinode
 | <kbd>Command/Ctrl + .</kbd>   | Composes Petri nets if two are selected                    |
 | <kbd>Command/Ctrl + s</kbd>   | Saves selected Petri net as an image (svg or png formats)  |
 | <kbd>Command/Ctrl + e</kbd>   | Exports selected Petri net as tikzcd code                  |
+| <kbd>Command/Ctrl + l</kbd>   | Saves selected Petri net to clipboard as tikzcd code       |
