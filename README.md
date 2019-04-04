@@ -5,7 +5,7 @@ by representing naturality conditions as Petri nets.
 
 A formal report, detailing the theory and design of Dinode can be found [here](https://github.com/brandonhewer/Dissertation).
 
-![](https://www.dropbox.com/s/4jby7q391nxywcw/petrinet.png?dl=)
+![](https://www.dropbox.com/s/4jby7q391nxywcw/petrinet.png?dl=1)
 
 
 Getting Started with Dinode
