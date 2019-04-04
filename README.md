@@ -1,7 +1,7 @@
 Dino
 ====
 A desktop application for exploring the relationship between parametric polymorphism and dinaturality,
-by representing naturality conditions as dinatural transformations.
+by representing naturality conditions as Petri nets.
 
 A formal report, detailing the theory and design of Dinode can be found [here](https://github.com/brandonhewer/Dissertation).
 
